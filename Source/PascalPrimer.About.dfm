@@ -69,6 +69,7 @@ object FormAbout: TFormAbout
     Lines.Strings = (
       'Contributors:'
       'Norman Morrison (inspiration, name, documentation)')
+    ReadOnly = True
     TabOrder = 1
     OnClick = FormClick
   end

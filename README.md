@@ -3,7 +3,7 @@ PascalPrimer
 
 PascalPrimer is a programming environment application designed for fast learning of the Pascal programming language. It allows you to write code and immediately see the result and impact of any changes interactively.
 
-PascalPrimer uses the Pascal dialect DWScript as programming language with a thin interface for text and graphical output (turtle graphic). 
+To improve the learning experience, the simplified Pascal dialect of DWScript is used. 
 
 
 About DWScript
