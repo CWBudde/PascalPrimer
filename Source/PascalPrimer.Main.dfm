@@ -279,6 +279,8 @@ object FormMain: TFormMain
   end
   object DelphiWebScript: TDelphiWebScript
     Config.CompilerOptions = [coOptimize, coSymbolDictionary, coContextMap, coAssertions]
+    Config.OnInclude = DelphiWebScriptInclude
+    Config.OnNeedUnit = DelphiWebScriptNeedUnit
     Left = 72
     Top = 16
   end
@@ -773,7 +775,7 @@ object FormMain: TFormMain
         Name = 'Real'
         DataType = 'Float'
       end>
-    UnitName = 'Basic'
+    UnitName = 'TurtleBasic'
     Variables = <
       item
         Name = 'CursorVisible'
@@ -1819,7 +1821,7 @@ object FormMain: TFormMain
         Value = -65281
       end>
     Dependencies.Strings = (
-      'Basic')
+      'TurtleBasic')
     Functions = <
       item
         Name = 'ComposeColor'
@@ -2007,7 +2009,7 @@ object FormMain: TFormMain
         Name = 'TColor'
         DataType = 'Integer'
       end>
-    UnitName = 'Intermediate'
+    UnitName = 'TurtleIntermediate'
     Variables = <
       item
         Name = 'CursorColor'
@@ -2056,8 +2058,8 @@ object FormMain: TFormMain
   object dwsUnitAdvanced: TdwsUnit
     Script = DelphiWebScript
     Dependencies.Strings = (
-      'Basic'
-      'Intermediate')
+      'TurtleBasic'
+      'TurtleIntermediate')
     Functions = <
       item
         Name = 'ComposeColorHSL'
@@ -2104,7 +2106,7 @@ object FormMain: TFormMain
         Overloaded = True
         OnEval = dwsFunctionsComposeColorHSLEval
       end>
-    UnitName = 'Advanced'
+    UnitName = 'TurtleAdvanced'
     StaticSymbols = False
     Left = 72
     Top = 248

@@ -14,7 +14,8 @@ uses
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
-  dwsStrings, dwsUnitSymbols, {$IFNDEF WIN64} dwsJIT, dwsJITx86, {$ENDIF}
+  dwsStrings, dwsUnitSymbols, dwsFunctions,
+  {$IFNDEF WIN64} dwsJIT, dwsJITx86, {$ENDIF}
 
   (* SynEdit *)
   SynEdit, SynEditHighlighter, SynHighlighterDWS, SynCompletionProposal,
@@ -293,9 +294,10 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure ActionFileOpenAccept(Sender: TObject);
-    procedure ActionFileSaveScriptAsAccept(Sender: TObject);
     procedure ActionFileNewExecute(Sender: TObject);
+    procedure ActionFileOpenAccept(Sender: TObject);
+    procedure ActionFileOpenBeforeExecute(Sender: TObject);
+    procedure ActionFileSaveScriptAsAccept(Sender: TObject);
     procedure ActionHelpAboutExecute(Sender: TObject);
     procedure ActionHelpDocumentationExecute(Sender: TObject);
     procedure ActionHelpTutorialExecute(Sender: TObject);
@@ -314,6 +316,8 @@ type
     procedure ActionScriptJustInTimeExecute(Sender: TObject);
     procedure ActionScriptJustInTimeUpdate(Sender: TObject);
     procedure ActionScriptRunExecute(Sender: TObject);
+    function DelphiWebScriptNeedUnit(const unitName: string; var unitSource: string): IdwsUnit;
+    procedure DelphiWebScriptInclude(const scriptName: string; var scriptSource: string);
     procedure dwsClassesTCanvasMethodsClearEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCanvasMethodsGetColorEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCanvasMethodsGetPixelColorEval(Info: TProgramInfo; ExtObject: TObject);
@@ -385,7 +389,6 @@ type
     procedure SynEditStatusChange(Sender: TObject; Changes: TSynStatusChanges);
     procedure SynParametersExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
-    procedure ActionFileOpenBeforeExecute(Sender: TObject);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -433,7 +436,7 @@ implementation
 {$R *.dfm}
 
 uses
-  Math, Registry, StrUtils, ShellAPI, dwsUtils,
+  Math, Registry, StrUtils, ShellAPI, dwsUtils, dwsXPlatform,
   GR32_PortableNetworkGraphic, GR32_VPR, GR32_Paths, GR32_Math, GR32_Brushes,
   PascalPrimer.About;
 
@@ -2195,6 +2198,28 @@ begin
     for Index := Low(FTargetAreas) to High(FTargetAreas) do
       with FTargetAreas[Index] do
         Passed := PtInRect(Rect, FTurtleCursor.Position);
+end;
+
+procedure TFormMain.DelphiWebScriptInclude(const scriptName: string;
+  var scriptSource: string);
+var
+  FileName: TFileName;
+begin
+  FileName := ExtractFilePath(ParamStr(0)) + 'Library\' +  scriptName;
+
+  if FileExists(FileName) then
+    scriptSource := LoadTextFromFile(FileName);
+end;
+
+function TFormMain.DelphiWebScriptNeedUnit(const unitName: string;
+  var unitSource: string): IdwsUnit;
+var
+  UnitFileName: TFileName;
+begin
+  UnitFileName := ExtractFilePath(ParamStr(0)) + 'Library\' +  unitName + '.pas';
+
+  if FileExists(UnitFileName) then
+    unitSource := LoadTextFromFile(UnitFileName);
 end;
 
 procedure TFormMain.SetSuggestionWhitelist(Items: array of string);
