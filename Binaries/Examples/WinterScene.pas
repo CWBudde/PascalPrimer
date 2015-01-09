@@ -164,7 +164,21 @@ begin
   end;                         
 end;                  
 
+procedure DrawGradient;
+var
+  Color: TColor;
+  H2: Integer;
+begin
+  H2 := (ClientHeight div 2);
+  for var Y := 0 to H2 - 1 do
+  begin                        
+    Color := ComposeColorHSL(0.5 * y / H2, 0.5, 0.1 * y / H2); 
+    for var X := 0 to ClientWidth - 1 do
+      SetPixelColor(X, Y, Color);
+  end;    
+end;
 
+DrawGradient;
 DrawTrees;
 CursorPositionX := Random * ClientWidth;          
 CursorPositionY := 0.5 * ClientHeight * (1 + Random);

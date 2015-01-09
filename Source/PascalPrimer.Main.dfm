@@ -142,6 +142,7 @@ object FormMain: TFormMain
       WantTabs = True
       OnChange = SynEditChange
       OnGutterPaint = SynEditGutterPaint
+      OnSpecialLineColors = SynEditSpecialLineColors
       OnStatusChange = SynEditStatusChange
       FontSmoothing = fsmNone
     end
@@ -157,6 +158,15 @@ object FormMain: TFormMain
     BevelOuter = bvNone
     BorderStyle = bsNone
     TabOrder = 2
+    Visible = False
+    object Badge: TPaintBox32
+      Left = 0
+      Top = 0
+      Width = 32
+      Height = 32
+      TabOrder = 0
+      OnPaintBuffer = BadgePaintBuffer
+    end
   end
   object ToolBar: TToolBar
     Left = 0
@@ -349,6 +359,9 @@ object FormMain: TFormMain
       object N8: TMenuItem
         Caption = '-'
       end
+      object Save1: TMenuItem
+        Action = ActionFileSaveScript
+      end
       object MenuItemFileSaveAs: TMenuItem
         Action = ActionFileSaveScriptAs
       end
@@ -525,8 +538,8 @@ object FormMain: TFormMain
       Caption = '&Open...'
       Dialog.DefaultExt = '.dws'
       Dialog.Filter = 
-        'Scripts (*.dws; *.pas)|*.dws;*.pas|Delphi Web Script (*.dws)|*.d' +
-        'ws|Pascal files (*.pas)|*.pas'
+        'Scripts (*.dws; *.pas)|*.dws;*.pas|Pascal files (*.pas)|*.pas|De' +
+        'lphi Web Script (*.dws)|*.dws'
       Dialog.Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
       Hint = 'Open|Open script'
       ImageIndex = 0
@@ -534,11 +547,18 @@ object FormMain: TFormMain
       BeforeExecute = ActionFileOpenBeforeExecute
       OnAccept = ActionFileOpenAccept
     end
+    object ActionFileSaveScript: TAction
+      Category = 'File'
+      Caption = '&Save'
+      ImageIndex = 1
+      ShortCut = 16467
+      OnExecute = ActionFileSaveScriptExecute
+    end
     object ActionFileSaveScriptAs: TFileSaveAs
       Category = 'File'
       Caption = 'Save &as...'
-      Dialog.DefaultExt = '.dws'
-      Dialog.Filter = 'Delphi Web Script (*.dws)|*.dws|Pascal files (*.pas)|*.pas'
+      Dialog.DefaultExt = '.pas'
+      Dialog.Filter = 'Pascal files (*.pas)|*.pas|Delphi Web Script (*.dws)|*.dws'
       Hint = 'Save as|Save active script'
       ImageIndex = 1
       OnAccept = ActionFileSaveScriptAsAccept
@@ -741,6 +761,36 @@ object FormMain: TFormMain
       item
         Name = 'Home'
         OnEval = dwsFunctionsHomeEval
+      end
+      item
+        Name = 'Sine'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsSineEval
+      end
+      item
+        Name = 'Cosine'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsCosineEval
+      end
+      item
+        Name = 'Tangent'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsTangentEval
       end>
     Synonyms = <
       item
@@ -2455,5 +2505,21 @@ object FormMain: TFormMain
     Left = 312
     Top = 144
     Bitmap = {}
+  end
+  object dwsUnitTeacher: TdwsUnit
+    Dependencies.Strings = (
+      'TurtleBasic'
+      'TurtleIntermediate')
+    UnitName = 'Teacher'
+    Variables = <
+      item
+        Name = 'TutorialText'
+        DataType = 'string'
+        OnReadVar = dwsUnitTeacherVariablesTutorialTextReadVar
+        OnWriteVar = dwsUnitTeacherVariablesTutorialTextWriteVar
+      end>
+    StaticSymbols = False
+    Left = 312
+    Top = 248
   end
 end

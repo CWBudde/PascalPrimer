@@ -14,13 +14,13 @@ uses
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
-  dwsStrings, dwsUnitSymbols, dwsFunctions,
+  dwsStrings, dwsUnitSymbols, dwsFunctions, dwsTokenizer,
   {$IFNDEF WIN64} dwsJIT, dwsJITx86, {$ENDIF}
 
   (* SynEdit *)
   SynEdit, SynEditHighlighter, SynHighlighterDWS, SynCompletionProposal,
   SynEditPlugins, SynEditMiscClasses, SynEditSearch, SynEditOptionsDialog,
-  SynMacroRecorder,
+  SynMacroRecorder, SynEditTypes,
 
   (* PNG *)
   PngImageList, PngButtonFunctions,
@@ -42,6 +42,7 @@ type
     procedure ScheduleCompilation;
 
     property OnCompilationCompleted: TOnCompilationCompleted read FOnCompilationCompleted write FOnCompilationCompleted;
+    property CompilationIsDue: Boolean read FCompilationIsDue;
   end;
 
   TExecutionThread = class(TThread)
@@ -136,10 +137,11 @@ type
 
   TStatistics = class
   type
-    TLogCall = (lcClear, lcCenter, lcComposeColor, lcComposeColorHSL, lcDelay,
-      lcHome, lcLineTo, lcLookAt, lcMoveTo, lcGo, lcDraw, lcSaveToFile,
-      lcTurnLeft, lcTurnRight, lcColorChange, lcAngleChange, lcAntialiased,
-      lcPopPosition, lcPushPosition, lcSetPixelColor, lcGetPixelColor);
+    TLogCall = (lcExecution, lcClear, lcCenter, lcComposeColor,
+      lcComposeColorHSL, lcDelay, lcHome, lcLineTo, lcLookAt, lcMoveTo, lcGo,
+      lcDraw, lcSaveToFile, lcTurnLeft, lcTurnRight, lcColorChange,
+      lcAngleChange, lcAntialiased, lcPopPosition, lcPushPosition,
+      lcSetPixelColor, lcGetPixelColor);
   private
     FCall: array [TLogCall] of Integer;
     function GetTurnCalls: Integer;
@@ -151,6 +153,7 @@ type
 
     property ClearCalls: Integer read FCall[lcClear];
     property CenterCalls: Integer read FCall[lcCenter];
+    property Executions: Integer read FCall[lcExecution];
     property ComposeColorCalls: Integer read FCall[lcComposeColor];
     property ComposeColorHSLCalls: Integer read FCall[lcComposeColorHSL];
     property DelayCalls: Integer read FCall[lcDelay];
@@ -175,6 +178,13 @@ type
     Rect: TRect;
     Passed: Boolean;
   end;
+
+  TAchievements = (acCompile, acGo, acDraw, acTurn, acClearHome, acAngle,
+    acComposeColor, acDelay, acAbsoluteCalls, acStack, acPixelAccess,
+    acObjectAccess, acFileAccess);
+
+  TAchievementProgress = array [TAchievements] of Integer;
+
 
   TFormMain = class(TForm)
     ActionEditCopy: TEditCopy;
@@ -290,6 +300,10 @@ type
     ToolButtonSeparator3: TToolButton;
     ToolButtonSeparator4: TToolButton;
     ToolButtonUndo: TToolButton;
+    dwsUnitTeacher: TdwsUnit;
+    Badge: TPaintBox32;
+    ActionFileSaveScript: TAction;
+    Save1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -316,6 +330,7 @@ type
     procedure ActionScriptJustInTimeExecute(Sender: TObject);
     procedure ActionScriptJustInTimeUpdate(Sender: TObject);
     procedure ActionScriptRunExecute(Sender: TObject);
+    procedure BadgePaintBuffer(Sender: TObject);
     function DelphiWebScriptNeedUnit(const unitName: string; var unitSource: string): IdwsUnit;
     procedure DelphiWebScriptInclude(const scriptName: string; var scriptSource: string);
     procedure dwsClassesTCanvasMethodsClearEval(Info: TProgramInfo; ExtObject: TObject);
@@ -341,6 +356,7 @@ type
     procedure dwsFunctionsClearEval(info: TProgramInfo);
     procedure dwsFunctionsComposeColorEval(info: TProgramInfo);
     procedure dwsFunctionsComposeColorHSLEval(info: TProgramInfo);
+    procedure dwsFunctionsCosineEval(info: TProgramInfo);
     procedure dwsFunctionsDelayEval(info: TProgramInfo);
     procedure dwsFunctionsDrawEval(info: TProgramInfo);
     procedure dwsFunctionsGetPixelColorEval(info: TProgramInfo);
@@ -353,6 +369,8 @@ type
     procedure dwsFunctionsPushPositionEval(info: TProgramInfo);
     procedure dwsFunctionsSaveToFileEval(info: TProgramInfo);
     procedure dwsFunctionsSetPixelColorEval(info: TProgramInfo);
+    procedure dwsFunctionsSineEval(info: TProgramInfo);
+    procedure dwsFunctionsTangentEval(info: TProgramInfo);
     procedure dwsFunctionsTurnLeftEval(info: TProgramInfo);
     procedure dwsFunctionsTurnRightEval(info: TProgramInfo);
     procedure dwsInstanceCanvasInstantiate(info: TProgramInfo; var ExtObject: TObject);
@@ -373,6 +391,8 @@ type
     procedure dwsVariablesCursorPositionYWriteVar(info: TProgramInfo; const value: Variant);
     procedure dwsVariablesCursorReadVar(info: TProgramInfo; var value: Variant);
     procedure dwsVariablesCursorWriteVar(info: TProgramInfo; const value: Variant);
+    procedure dwsUnitTeacherVariablesTutorialTextReadVar(info: TProgramInfo; var value: Variant);
+    procedure dwsUnitTeacherVariablesTutorialTextWriteVar(info: TProgramInfo; const value: Variant);
     procedure Image32PaintStage(Sender: TObject; Buffer: TBitmap32; StageNum: Cardinal);
     procedure Image32Resize(Sender: TObject);
     procedure ListBoxCompilerClick(Sender: TObject);
@@ -389,6 +409,9 @@ type
     procedure SynEditStatusChange(Sender: TObject; Changes: TSynStatusChanges);
     procedure SynParametersExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
+    procedure SynEditSpecialLineColors(Sender: TObject; Line: Integer;
+      var Special: Boolean; var FG, BG: TColor);
+    procedure ActionFileSaveScriptExecute(Sender: TObject);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -396,11 +419,14 @@ type
     FCompiledProgram: IdwsProgram;
     FCriticalSection: TCriticalSection;
 
+    FAchievementLevel: TAchievementProgress;
     FPolygonInverter: TInvertPolygonFiller;
 
     FTurtleCanvas: TTurtleCanvas;
     FTurtleCursor: TTurtleCursor;
     FModified: Boolean;
+    FCurrentFileName: TFileName;
+    FOriginalCaption: string;
 
     FTutorialIndex: Integer;
     FLastArea: TRect;
@@ -413,6 +439,9 @@ type
 
     FWebUpdate: TWebUpdate;
 
+    function GetAchievementLevel(Item: TAchievements): Integer; inline;
+    procedure SetAchievementLevel(Item: TAchievements; const Value: Integer);
+
     procedure CursorPositionChangedHandler(Sender: TObject);
     procedure CompilationCompletedHandler(Sender: TObject; CompiledProgram: IdwsProgram);
     procedure ExecutionDoneHandler(Sender: TObject);
@@ -423,9 +452,14 @@ type
     procedure ResetSuggestionWhitelist;
     procedure SetSuggestionWhitelist(Items: array of string);
     procedure BuildBadges;
+    procedure UpdateBadges;
+    procedure SetCurrentFileName(const Value: TFileName);
   public
     procedure CompileScript;
     procedure RunScript(JIT: Boolean = False);
+
+    property AchievementLevel[Item: TAchievements]: Integer read GetAchievementLevel write SetAchievementLevel;
+    property CurrentFileName: TFileName read FCurrentFileName write SetCurrentFileName;
   end;
 
 var
@@ -442,6 +476,63 @@ uses
 
 const
   CWebUpdateUrl = 'http://www.savioursofsoul.de/Christian/WebUpdate/PascalPrimer/';
+
+{ TEditorFrameSynEditPlugin }
+
+type
+  TEditorFrameSynEditPlugin = class(TSynEditPlugin)
+  protected
+    procedure AfterPaint(ACanvas: TCanvas; const AClip: TRect;
+      FirstLine, LastLine: Integer); override;
+  end;
+
+procedure TEditorFrameSynEditPlugin.AfterPaint(ACanvas: TCanvas;
+  const AClip: TRect; FirstLine, LastLine: Integer);
+var
+  SearchText: string;
+  Pt: TPoint;
+  Rct: TRect;
+  OldFont: TFont;
+  LineIndex, Count, ItemIndex: Integer;
+  CurrCoord: TBufferCoord;
+begin
+  inherited;
+
+  SearchText := Editor.SearchEngine.Pattern;
+  if SearchText = '' then
+    Exit;
+
+  OldFont := TFont.Create;
+  try
+    OldFont.Assign(ACanvas.Font);
+
+    ACanvas.Brush.Color := $60A0F0;
+    ACanvas.Brush.Style := bsSolid;
+
+    for LineIndex := FirstLine to LastLine do
+    begin
+      Count := Editor.SearchEngine.FindAll(Editor.Lines[LineIndex - 1]);
+      for ItemIndex := 0 to Count - 1 do
+      begin
+        CurrCoord := BufferCoord(Editor.SearchEngine.Results[ItemIndex], LineIndex);
+        if CurrCoord = Editor.BlockBegin then
+          Continue;
+
+        Pt := Editor.RowColumnToPixels(Editor.BufferToDisplayPos(CurrCoord));
+        Rct := Rect(Pt.X, Pt.Y, Pt.X + Editor.CharWidth * Length(SearchText),
+          Pt.Y + Editor.LineHeight);
+
+        ACanvas.FillRect(Rct);
+        ACanvas.TextRect(Rct, Pt.X, Pt.Y, SearchText);
+      end
+    end;
+
+    ACanvas.Font.Assign(OldFont);
+  finally
+    OldFont.Free;
+  end;
+end;
+
 
 { TBackgroundCompilationThread }
 
@@ -812,6 +903,7 @@ begin
   FBackgroundCompilationThread.OnCompilationCompleted := CompilationCompletedHandler;
 
   FTutorialIndex := -1;
+  FOriginalCaption := Caption;
 
   FSuggestionWhiteList := TStringList.Create;
   ResetSuggestionWhitelist;
@@ -823,6 +915,8 @@ begin
 
   Image32.PaintStages.Add.Stage := PST_CUSTOM;
   Image32.PaintStages.Insert(1).Stage := PST_CUSTOM;
+
+  TEditorFrameSynEditPlugin.Create(SynEdit);
 
   BuildBadges;
 end;
@@ -848,7 +942,7 @@ end;
 
 procedure TFormMain.FormShow(Sender: TObject);
 begin
-  FRecentScriptName := ChangeFileExt(Application.ExeName, '.dws');
+  FRecentScriptName := ChangeFileExt(Application.ExeName, '.pas');
   if FileExists(FRecentScriptName) then
     SynEdit.Lines.LoadFromFile(FRecentScriptName);
 
@@ -878,6 +972,11 @@ begin
 
   // schedule first compilation
   FBackgroundCompilationThread.ScheduleCompilation;
+end;
+
+function TFormMain.GetAchievementLevel(Item: TAchievements): Integer;
+begin
+  Result := FAchievementLevel[Item];
 end;
 
 procedure TFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -1205,6 +1304,33 @@ begin
   ExtObject := FTurtleCursor;
 end;
 
+procedure TFormMain.dwsFunctionsCosineEval(info: TProgramInfo);
+begin
+  info.ResultAsFloat := Cos(DegToRad(info.ParamAsFloat[0]));
+end;
+
+procedure TFormMain.dwsFunctionsSineEval(info: TProgramInfo);
+begin
+  info.ResultAsFloat := Sin(DegToRad(info.ParamAsFloat[0]));
+end;
+
+procedure TFormMain.dwsFunctionsTangentEval(info: TProgramInfo);
+begin
+  info.ResultAsFloat := Tan(DegToRad(info.ParamAsFloat[0]));
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesTutorialTextReadVar(
+  info: TProgramInfo; var value: Variant);
+begin
+  Value := FTutorialText;
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesTutorialTextWriteVar(
+  info: TProgramInfo; const value: Variant);
+begin
+  FTutorialText := Value;
+end;
+
 procedure TFormMain.dwsClassesTCanvasMethodsGetColorEval(
   Info: TProgramInfo; ExtObject: TObject);
 begin
@@ -1391,6 +1517,7 @@ var
   TargetAreasReached: Boolean;
 begin
   FExecutionThread := nil;
+  LogCall(lcExecution);
 
   // check for tutorial conditions
   if (FTutorialIndex >= 0) and Assigned(FTutorialStatistics) then
@@ -1436,6 +1563,8 @@ begin
         PrepareTutorial(FTutorialIndex + 1);
     end;
   end;
+
+  UpdateBadges;
 end;
 
 procedure TFormMain.CompileScript;
@@ -2026,12 +2155,14 @@ begin
     'Do you want to saved it first?', mtConfirmation, [mbYes, mbNo], 0) = mrYes) then
     ActionFileSaveScriptAs.Execute;
 
+  CurrentFileName := '';
   SynEdit.Text := '';
 end;
 
 procedure TFormMain.ActionFileOpenAccept(Sender: TObject);
 begin
   SynEdit.Lines.LoadFromFile(ActionFileOpen.Dialog.Filename);
+  CurrentFileName := ActionFileOpen.Dialog.Filename;
   FBackgroundCompilationThread.ScheduleCompilation;
 end;
 
@@ -2061,6 +2192,19 @@ end;
 procedure TFormMain.ActionFileSaveScriptAsAccept(Sender: TObject);
 begin
   SynEdit.Lines.SaveToFile(ActionFileSaveScriptAs.Dialog.Filename);
+  CurrentFileName := ActionFileSaveScriptAs.Dialog.Filename;
+  FModified := False;
+end;
+
+procedure TFormMain.ActionFileSaveScriptExecute(Sender: TObject);
+begin
+  if CurrentFileName = '' then
+  begin
+    ActionFileSaveScriptAs.Execute;
+    Exit;
+  end;
+
+  SynEdit.Lines.SaveToFile(CurrentFileName);
   FModified := False;
 end;
 
@@ -2220,6 +2364,27 @@ begin
 
   if FileExists(UnitFileName) then
     unitSource := LoadTextFromFile(UnitFileName);
+end;
+
+procedure TFormMain.SetAchievementLevel(Item: TAchievements;
+  const Value: Integer);
+begin
+  if FAchievementLevel[Item] <> Value then
+  begin
+    FAchievementLevel[Item] := Value;
+  end;
+end;
+
+procedure TFormMain.SetCurrentFileName(const Value: TFileName);
+begin
+  if FCurrentFileName <> Value then
+  begin
+    FCurrentFileName := Value;
+    if FCurrentFileName = '' then
+      Caption := FOriginalCaption
+    else
+      Caption := FOriginalCaption + ' - ' + ExtractFileName(FCurrentFileName);
+  end;
 end;
 
 procedure TFormMain.SetSuggestionWhitelist(Items: array of string);
@@ -2709,6 +2874,34 @@ begin
   end;
 end;
 
+procedure TFormMain.SynEditSpecialLineColors(Sender: TObject; Line: Integer;
+  var Special: Boolean; var FG, BG: TColor);
+var
+  Index: Integer;
+begin
+  if FBackgroundCompilationThread.CompilationIsDue then
+    Exit;
+
+  if not Assigned(FCompiledProgram) then
+    Exit;
+
+  for Index := 0 to FCompiledProgram.Msgs.Count - 1 do
+    if FCompiledProgram.Msgs[Index] is TScriptMessage then
+    begin
+      if TScriptMessage(FCompiledProgram.Msgs[Index]).ScriptPos.Line = Line then
+      begin
+        if FCompiledProgram.Msgs[Index].IsError then
+          BG := $C0C0FF
+        else
+        if FCompiledProgram.Msgs[Index] is TInfoMessage then
+          BG := $FFD8C0
+        else
+          BG := $C0FFFF;
+        Special := True;
+      end;
+    end;
+end;
+
 procedure TFormMain.SynEditStatusChange(Sender: TObject;
   Changes: TSynStatusChanges);
 begin
@@ -2774,18 +2967,31 @@ begin
   end;
 end;
 
+procedure TFormMain.UpdateBadges;
+begin
+  AchievementLevel[acCompile] := Round(Log2(1 + FStatistics.Executions));
+end;
+
+procedure TFormMain.BadgePaintBuffer(Sender: TObject);
+begin
+  with TPaintBox32(Sender) do
+  begin
+    Buffer.Clear(Color32(ScrollBox.Color));
+
+    if Tag < BadgeList.Bitmaps.Count then
+      Buffer.Draw(0, 0, BadgeList.Bitmap[Tag]);
+  end;
+end;
+
 procedure TFormMain.BuildBadges;
 var
   Index: Integer;
   Bitmap: TBitmap32;
-  Image32: TImage32;
 begin
-  ScrollBox.Visible := False;
-  Exit;
-
   for Index := 0 to 10 do
   begin
     Bitmap := BadgeList.Bitmaps.Add.Bitmap;
+    Bitmap.DrawMode := dmBlend;
     Bitmap.SetSize(32, 32);
     case Index of
       0:
@@ -2794,13 +3000,6 @@ begin
         DrawBadge(Bitmap, clTeal32, clBlue32);
     end;
   end;
-
-  Image32 := TImage32.Create(ScrollBox);
-  Image32.Parent := ScrollBox;
-  Image32.Bitmap.Assign(BadgeList.Bitmaps[0].Bitmap);
-  Image32.Bitmap.DrawMode := dmBlend;
-  Image32.Width := Image32.Bitmap.Width;
-  Image32.Height := Image32.Bitmap.Height;
 end;
 
 initialization
