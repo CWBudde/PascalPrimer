@@ -25,7 +25,7 @@ implementation
 
 uses
   System.Math, GR32_Math, GR32_VectorUtils, GR32_Polygons, GR32_PNG,
-  GR32_ColorGradients, GR32_Blend;
+  GR32_PortableNetworkGraphic, GR32_ColorGradients, GR32_Blend;
 
 {$R *.dfm}
 

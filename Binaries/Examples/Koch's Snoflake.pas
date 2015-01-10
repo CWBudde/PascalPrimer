@@ -18,7 +18,7 @@ begin
   end;
 end;
 
-procedure DrawKochSnowflake(Level: Integer = 5; Size: Float = 330);
+procedure DrawKochSnowflake(Level: Integer = 5; Size: Float = 300);
 begin
   for var i := 0 to 2 do
   begin
@@ -27,6 +27,6 @@ begin
   end;
 end;    
 
-MoveTo(10, 300);
+MoveTo(10, 270);
 CursorAngle := 60;
 DrawKochSnowflake;

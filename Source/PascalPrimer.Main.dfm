@@ -287,37 +287,30 @@ object FormMain: TFormMain
       Action = ActionScriptRun
     end
   end
-  object DelphiWebScript: TDelphiWebScript
-    Config.CompilerOptions = [coOptimize, coSymbolDictionary, coContextMap, coAssertions]
-    Config.OnInclude = DelphiWebScriptInclude
-    Config.OnNeedUnit = DelphiWebScriptNeedUnit
-    Left = 72
-    Top = 16
-  end
   object SynDWSSyn: TSynDWSSyn
     DefaultFilter = 'DWScript Files (*.dws;*.pas;*.inc)|*.dws;*.pas;*.inc'
     Options.AutoDetectEnabled = False
     Options.AutoDetectLineLimit = 0
     Options.Visible = False
     StringAttri.Foreground = clPurple
-    Left = 240
-    Top = 16
+    Left = 184
+    Top = 40
   end
   object SynMacroRecorder: TSynMacroRecorder
     Editor = SynEdit
     RecordShortCut = 24658
     PlaybackShortCut = 24656
-    Left = 328
-    Top = 16
+    Left = 280
+    Top = 40
   end
   object SynEditOptionsDialog: TSynEditOptionsDialog
     UseExtendedStrings = False
-    Left = 240
-    Top = 72
+    Left = 184
+    Top = 96
   end
   object SynEditSearch: TSynEditSearch
-    Left = 328
-    Top = 72
+    Left = 280
+    Top = 96
   end
   object SynCodeSuggestions: TSynCompletionProposal
     Options = [scoLimitToMatchedText, scoTitleIsCentered, scoUseInsertList, scoEndCharCompletion, scoCompleteWithEnter]
@@ -341,13 +334,13 @@ object FormMain: TFormMain
     OnShow = SynCodeSuggestionsShow
     ShortCut = 16416
     Editor = SynEdit
-    Left = 424
-    Top = 72
+    Left = 376
+    Top = 96
   end
   object MainMenu: TMainMenu
     Images = ImageListActions
-    Left = 152
-    Top = 16
+    Left = 88
+    Top = 40
     object MenuItemFile: TMenuItem
       Caption = '&File'
       object MenuItemFileNew: TMenuItem
@@ -359,7 +352,7 @@ object FormMain: TFormMain
       object N8: TMenuItem
         Caption = '-'
       end
-      object Save1: TMenuItem
+      object MenuItemFileSave: TMenuItem
         Action = ActionFileSaveScript
       end
       object MenuItemFileSaveAs: TMenuItem
@@ -476,8 +469,8 @@ object FormMain: TFormMain
   end
   object ActionList: TActionList
     Images = ImageListActions
-    Left = 152
-    Top = 72
+    Left = 88
+    Top = 96
     object ActionEditCut: TEditCut
       Category = 'Edit'
       Caption = '&Cut'
@@ -710,138 +703,8 @@ object FormMain: TFormMain
     OnExecute = SynParametersExecute
     ShortCut = 24608
     Editor = SynEdit
-    Left = 424
-    Top = 16
-  end
-  object dwsUnitBasic: TdwsUnit
-    Script = DelphiWebScript
-    Functions = <
-      item
-        Name = 'Clear'
-        Overloaded = True
-        OnEval = dwsFunctionsClearEval
-      end
-      item
-        Name = 'Turn'
-        Parameters = <
-          item
-            Name = 'Angle'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 90
-          end>
-        OnEval = dwsFunctionsTurnLeftEval
-      end
-      item
-        Name = 'Go'
-        Parameters = <
-          item
-            Name = 'Distance'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 10.000000000000000000
-          end>
-        OnEval = dwsFunctionsGoEval
-      end
-      item
-        Name = 'Draw'
-        Parameters = <
-          item
-            Name = 'Distance'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 10.000000000000000000
-          end>
-        OnEval = dwsFunctionsDrawEval
-      end
-      item
-        Name = 'Center'
-        OnEval = dwsFunctionsCenterEval
-      end
-      item
-        Name = 'Home'
-        OnEval = dwsFunctionsHomeEval
-      end
-      item
-        Name = 'Sine'
-        Parameters = <
-          item
-            Name = 'Value'
-            DataType = 'Float'
-          end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsSineEval
-      end
-      item
-        Name = 'Cosine'
-        Parameters = <
-          item
-            Name = 'Value'
-            DataType = 'Float'
-          end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsCosineEval
-      end
-      item
-        Name = 'Tangent'
-        Parameters = <
-          item
-            Name = 'Value'
-            DataType = 'Float'
-          end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsTangentEval
-      end>
-    Synonyms = <
-      item
-        Name = 'Single'
-        DataType = 'Float'
-      end
-      item
-        Name = 'Double'
-        DataType = 'Float'
-      end
-      item
-        Name = 'Byte'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'Word'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'SmallInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'LongInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'ShortInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'Real'
-        DataType = 'Float'
-      end>
-    UnitName = 'TurtleBasic'
-    Variables = <
-      item
-        Name = 'CursorVisible'
-        DataType = 'Boolean'
-        OnReadVar = dwsVariablesCursorReadVar
-        OnWriteVar = dwsVariablesCursorWriteVar
-      end
-      item
-        Name = 'CursorAngle'
-        DataType = 'Float'
-        OnReadVar = dwsVariablesCursorAngleReadVar
-        OnWriteVar = dwsVariablesCursorAngleWriteVar
-      end>
-    StaticSymbols = False
-    Left = 72
-    Top = 136
+    Left = 376
+    Top = 40
   end
   object ImageListActions: TPngImageList
     ColorDepth = cd32Bit
@@ -1526,645 +1389,14 @@ object FormMain: TFormMain
           44AE426082}
       end>
     PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
-    Left = 424
-    Top = 144
+    Left = 376
+    Top = 168
     Bitmap = {}
-  end
-  object dwsUnitIntermediate: TdwsUnit
-    Script = DelphiWebScript
-    Classes = <
-      item
-        Name = 'TCursor'
-        Methods = <
-          item
-            Name = 'GetAngle'
-            ResultType = 'Float'
-            OnEval = dwsClassesTCursorMethodsGetAngleEval
-            Visibility = cvPrivate
-            Kind = mkFunction
-          end
-          item
-            Name = 'GetVisible'
-            ResultType = 'Boolean'
-            OnEval = dwsClassesTCursorMethodsGetVisibleEval
-            Visibility = cvPrivate
-            Kind = mkFunction
-          end
-          item
-            Name = 'GetColor'
-            ResultType = 'TColor'
-            OnEval = dwsClassesTCursorMethodsGetColorEval
-            Visibility = cvPrivate
-            Kind = mkFunction
-          end
-          item
-            Name = 'SetAngle'
-            Parameters = <
-              item
-                Name = 'Value'
-                DataType = 'Float'
-              end>
-            OnEval = dwsClassesTCursorMethodsSetAngleEval
-            Visibility = cvPrivate
-            Kind = mkProcedure
-          end
-          item
-            Name = 'SetVisible'
-            Parameters = <
-              item
-                Name = 'Value'
-                DataType = 'Boolean'
-              end>
-            OnEval = dwsClassesTCursorMethodsSetVisibleEval
-            Visibility = cvPrivate
-            Kind = mkProcedure
-          end
-          item
-            Name = 'SetColor'
-            Parameters = <
-              item
-                Name = 'Value'
-                DataType = 'TColor'
-              end>
-            OnEval = dwsClassesTCursorMethodsSetColorEval
-            Visibility = cvPrivate
-            Kind = mkProcedure
-          end
-          item
-            Name = 'Turn'
-            Parameters = <
-              item
-                Name = 'Angle'
-                DataType = 'Float'
-                HasDefaultValue = True
-                DefaultValue = 90.000000000000000000
-              end>
-            OnEval = dwsClassesTCursorMethodsTurnLeftEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'TurnLeft'
-            Parameters = <
-              item
-                Name = 'Angle'
-                DataType = 'Float'
-                HasDefaultValue = True
-                DefaultValue = 90.000000000000000000
-              end>
-            OnEval = dwsClassesTCursorMethodsTurnLeftEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'TurnRight'
-            Parameters = <
-              item
-                Name = 'Angle'
-                DataType = 'Float'
-                HasDefaultValue = True
-                DefaultValue = 90.000000000000000000
-              end>
-            OnEval = dwsClassesTCursorMethodsTurnRightEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'Go'
-            Parameters = <
-              item
-                Name = 'Distance'
-                DataType = 'Float'
-                HasDefaultValue = True
-                DefaultValue = 10.000000000000000000
-              end>
-            OnEval = dwsClassesTCursorMethodsGoEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'Draw'
-            Parameters = <
-              item
-                Name = 'Distance'
-                DataType = 'Float'
-                HasDefaultValue = True
-                DefaultValue = 10
-              end>
-            OnEval = dwsClassesTCursorMethodsDrawEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'LookAt'
-            Parameters = <
-              item
-                Name = 'X'
-                DataType = 'Float'
-              end
-              item
-                Name = 'Y'
-                DataType = 'Float'
-              end>
-            OnEval = dwsClassesTCursorMethodsLookAtEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'PushPosition'
-            OnEval = dwsClassesTCursorMethodsPushPositionEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'PopPosition'
-            OnEval = dwsClassesTCursorMethodsPopPositionEval
-            Kind = mkProcedure
-          end>
-        Properties = <
-          item
-            Name = 'Visible'
-            DataType = 'Boolean'
-            ReadAccess = 'GetVisible'
-            WriteAccess = 'SetVisible'
-          end
-          item
-            Name = 'Angle'
-            DataType = 'Float'
-            ReadAccess = 'GetAngle'
-            WriteAccess = 'SetAngle'
-          end
-          item
-            Name = 'Color'
-            DataType = 'TColor'
-            ReadAccess = 'GetColor'
-            WriteAccess = 'SetColor'
-          end>
-      end
-      item
-        Name = 'TCanvas'
-        Methods = <
-          item
-            Name = 'GetPixelColor'
-            Parameters = <
-              item
-                Name = 'X'
-                DataType = 'Integer'
-              end
-              item
-                Name = 'Y'
-                DataType = 'Integer'
-              end>
-            ResultType = 'TColor'
-            OnEval = dwsClassesTCanvasMethodsGetPixelColorEval
-            Visibility = cvPrivate
-            Kind = mkFunction
-          end
-          item
-            Name = 'SetPixelColor'
-            Parameters = <
-              item
-                Name = 'X'
-                DataType = 'Integer'
-              end
-              item
-                Name = 'Y'
-                DataType = 'Integer'
-              end
-              item
-                Name = 'Value'
-                DataType = 'TColor'
-              end>
-            OnEval = dwsClassesTCanvasMethodsSetPixelColorEval
-            Visibility = cvPrivate
-            Kind = mkProcedure
-          end
-          item
-            Name = 'SetColor'
-            Parameters = <
-              item
-                Name = 'Value'
-                DataType = 'TColor'
-              end>
-            OnEval = dwsClassesTCanvasMethodsSetColorEval
-            Visibility = cvPrivate
-            Kind = mkProcedure
-          end
-          item
-            Name = 'GetColor'
-            ResultType = 'TColor'
-            OnEval = dwsClassesTCanvasMethodsGetColorEval
-            Visibility = cvPrivate
-            Kind = mkFunction
-          end
-          item
-            Name = 'Clear'
-            OnEval = dwsClassesTCanvasMethodsClearEval
-            Kind = mkProcedure
-          end
-          item
-            Name = 'SaveToFile'
-            Parameters = <
-              item
-                Name = 'FileName'
-                DataType = 'string'
-              end>
-            OnEval = dwsClassesTCanvasSaveToFileEval
-            Kind = mkProcedure
-          end>
-        Properties = <
-          item
-            Name = 'Pixel'
-            DataType = 'TColor'
-            ReadAccess = 'GetPixelColor'
-            WriteAccess = 'SetPixelColor'
-            Parameters = <
-              item
-                Name = 'X'
-                DataType = 'Integer'
-              end
-              item
-                Name = 'Y'
-                DataType = 'Integer'
-              end>
-            IsDefault = True
-          end
-          item
-            Name = 'Color'
-            DataType = 'TColor'
-            ReadAccess = 'GetColor'
-            WriteAccess = 'SetColor'
-          end>
-      end>
-    Constants = <
-      item
-        Name = 'clBlack'
-        DataType = 'TColor'
-        Value = -16777216
-      end
-      item
-        Name = 'clDimGray'
-        DataType = 'TColor'
-        Value = -12632257
-      end
-      item
-        Name = 'clGray'
-        DataType = 'TColor'
-        Value = -8421505
-      end
-      item
-        Name = 'clLightGray'
-        DataType = 'TColor'
-        Value = -4210753
-      end
-      item
-        Name = 'clWhite'
-        DataType = 'TColor'
-        Value = -1
-      end
-      item
-        Name = 'clMaroon'
-        DataType = 'TColor'
-        Value = -8454144
-      end
-      item
-        Name = 'clGreen'
-        DataType = 'TColor'
-        Value = -16744704
-      end
-      item
-        Name = 'clOlive'
-        DataType = 'TColor'
-        Value = -8421632
-      end
-      item
-        Name = 'clNavy'
-        DataType = 'TColor'
-        Value = -16777089
-      end
-      item
-        Name = 'clPurple'
-        DataType = 'TColor'
-        Value = -8454017
-      end
-      item
-        Name = 'clTeal'
-        DataType = 'TColor'
-        Value = -16744577
-      end
-      item
-        Name = 'clRed'
-        DataType = 'TColor'
-        Value = -65536
-      end
-      item
-        Name = 'clLime'
-        DataType = 'TColor'
-        Value = -16711936
-      end
-      item
-        Name = 'clYellow'
-        DataType = 'TColor'
-        Value = -256
-      end
-      item
-        Name = 'clBlue'
-        DataType = 'TColor'
-        Value = -16776961
-      end
-      item
-        Name = 'clFuchsia'
-        DataType = 'TColor'
-        Value = -65281
-      end>
-    Dependencies.Strings = (
-      'TurtleBasic')
-    Functions = <
-      item
-        Name = 'ComposeColor'
-        Parameters = <
-          item
-            Name = 'Red'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Green'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Blue'
-            DataType = 'Float'
-          end>
-        ResultType = 'TColor'
-        Overloaded = True
-        OnEval = dwsFunctionsComposeColorEval
-      end
-      item
-        Name = 'ComposeColor'
-        Parameters = <
-          item
-            Name = 'Red'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Green'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Bliue'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Alpha'
-            DataType = 'Float'
-          end>
-        ResultType = 'TColor'
-        Overloaded = True
-        OnEval = dwsFunctionsComposeColorEval
-      end
-      item
-        Name = 'Clear'
-        Parameters = <
-          item
-            Name = 'Color'
-            DataType = 'Integer'
-          end>
-        Overloaded = True
-        OnEval = dwsFunctionsClearEval
-      end
-      item
-        Name = 'LineTo'
-        Parameters = <
-          item
-            Name = 'X'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Y'
-            DataType = 'Float'
-          end>
-        OnEval = dwsFunctionsLineToEval
-      end
-      item
-        Name = 'MoveTo'
-        Parameters = <
-          item
-            Name = 'X'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Y'
-            DataType = 'Float'
-          end>
-        OnEval = dwsFunctionsMoveToEval
-      end
-      item
-        Name = 'TurnLeft'
-        Parameters = <
-          item
-            Name = 'Angle'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 90.000000000000000000
-          end>
-        OnEval = dwsFunctionsTurnLeftEval
-      end
-      item
-        Name = 'TurnRight'
-        Parameters = <
-          item
-            Name = 'Angle'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 90.000000000000000000
-          end>
-        OnEval = dwsFunctionsTurnRightEval
-      end
-      item
-        Name = 'SaveToFile'
-        Parameters = <
-          item
-            Name = 'FileName'
-            DataType = 'string'
-          end>
-        OnEval = dwsFunctionsSaveToFileEval
-      end
-      item
-        Name = 'LookAt'
-        Parameters = <
-          item
-            Name = 'X'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Y'
-            DataType = 'Float'
-          end>
-        OnEval = dwsFunctionsLookAtEval
-      end
-      item
-        Name = 'GetPixelColor'
-        Parameters = <
-          item
-            Name = 'X'
-            DataType = 'Integer'
-          end
-          item
-            Name = 'Y'
-            DataType = 'Integer'
-          end>
-        ResultType = 'TColor'
-        OnEval = dwsFunctionsGetPixelColorEval
-      end
-      item
-        Name = 'SetPixelColor'
-        Parameters = <
-          item
-            Name = 'X'
-            DataType = 'Integer'
-          end
-          item
-            Name = 'Y'
-            DataType = 'Integer'
-          end
-          item
-            Name = 'Color'
-            DataType = 'TColor'
-          end>
-        OnEval = dwsFunctionsSetPixelColorEval
-      end
-      item
-        Name = 'Delay'
-        Parameters = <
-          item
-            Name = 'Milliseconds'
-            DataType = 'Integer'
-          end>
-        OnEval = dwsFunctionsDelayEval
-      end
-      item
-        Name = 'PushPosition'
-        OnEval = dwsFunctionsPushPositionEval
-      end
-      item
-        Name = 'PopPosition'
-        OnEval = dwsFunctionsPopPositionEval
-      end>
-    Instances = <
-      item
-        Name = 'Canvas'
-        DataType = 'TCanvas'
-        OnInstantiate = dwsInstanceCanvasInstantiate
-      end
-      item
-        Name = 'Cursor'
-        DataType = 'TCursor'
-        OnInstantiate = dwsInstanceCursorInstantiate
-      end>
-    Synonyms = <
-      item
-        Name = 'TColor'
-        DataType = 'Integer'
-      end>
-    UnitName = 'TurtleIntermediate'
-    Variables = <
-      item
-        Name = 'CursorColor'
-        DataType = 'TColor'
-        OnReadVar = dwsVariablesCursorColorReadVar
-        OnWriteVar = dwsVariablesCursorColorWriteVar
-      end
-      item
-        Name = 'AntiAliasedLine'
-        DataType = 'Boolean'
-        OnReadVar = dwsVariablesAntiAliasedLineReadVar
-        OnWriteVar = dwsVariablesAntiAliasedLineWriteVar
-      end
-      item
-        Name = 'CanvasColor'
-        DataType = 'TColor'
-        OnReadVar = dwsVariablesCanvasColorReadVar
-        OnWriteVar = dwsVariablesCanvasColorWriteVar
-      end
-      item
-        Name = 'ClientWidth'
-        DataType = 'Integer'
-        OnReadVar = dwsVariablesClientWidthReadVar
-      end
-      item
-        Name = 'ClientHeight'
-        DataType = 'Integer'
-        OnReadVar = dwsVariablesClientHeightReadVar
-      end
-      item
-        Name = 'CursorPositionX'
-        DataType = 'Float'
-        OnReadVar = dwsVariablesCursorPositionXReadVar
-        OnWriteVar = dwsVariablesCursorPositionXWriteVar
-      end
-      item
-        Name = 'CursorPositionY'
-        DataType = 'Float'
-        OnReadVar = dwsVariablesCursorPositionYReadVar
-        OnWriteVar = dwsVariablesCursorPositionYWriteVar
-      end>
-    StaticSymbols = False
-    Left = 72
-    Top = 192
-  end
-  object dwsUnitAdvanced: TdwsUnit
-    Script = DelphiWebScript
-    Dependencies.Strings = (
-      'TurtleBasic'
-      'TurtleIntermediate')
-    Functions = <
-      item
-        Name = 'ComposeColorHSL'
-        Parameters = <
-          item
-            Name = 'Hue'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Saturation'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 1.000000000000000000
-          end
-          item
-            Name = 'Luminance'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 0.500000000000000000
-          end>
-        ResultType = 'TColor'
-        Overloaded = True
-        OnEval = dwsFunctionsComposeColorHSLEval
-      end
-      item
-        Name = 'ComposeColorHSL'
-        Parameters = <
-          item
-            Name = 'Hue'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Saturation'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Luminace'
-            DataType = 'Float'
-          end
-          item
-            Name = 'Alpha'
-            DataType = 'Float'
-          end>
-        Overloaded = True
-        OnEval = dwsFunctionsComposeColorHSLEval
-      end>
-    UnitName = 'TurtleAdvanced'
-    StaticSymbols = False
-    Left = 72
-    Top = 248
   end
   object BadgeList: TBitmap32List
     Bitmaps = <>
-    Left = 216
-    Top = 144
+    Left = 280
+    Top = 168
   end
   object ImageListSuggestion: TPngImageList
     ColorDepth = cd32Bit
@@ -2502,8 +1734,8 @@ object FormMain: TFormMain
           0400009EE315F0CA5B0F3A0000000049454E44AE426082}
       end>
     PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
-    Left = 312
-    Top = 144
+    Left = 184
+    Top = 168
     Bitmap = {}
   end
   object dwsUnitTeacher: TdwsUnit
@@ -2519,7 +1751,7 @@ object FormMain: TFormMain
         OnWriteVar = dwsUnitTeacherVariablesTutorialTextWriteVar
       end>
     StaticSymbols = False
-    Left = 312
-    Top = 248
+    Left = 88
+    Top = 168
   end
 end
