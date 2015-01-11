@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Types, System.Generics.Collections,
-  System.Variants,
+  System.Variants, System.UITypes,
 
   (* GR32 *)
   GR32,
@@ -15,7 +15,7 @@ uses
   dwsFunctions, dwsTokenizer;
 
 type
-  IImageCanvas = interface
+  IOutputGraphics = interface
     function GetHeight: Integer;
     function GetWidth: Integer;
     function GetPixelColor(X, Y: Integer): TColor32;
@@ -32,20 +32,34 @@ type
     property PixelColor[X, Y: Integer]: TColor32 read GetPixelColor write SetPixelColor;
   end;
 
+  IOutputText = interface
+    function GetText: string;
+    procedure SetText(const Value: string);
+
+    procedure AddString(Text: string);
+    procedure AddLine(Text: string);
+    procedure Clear;
+
+    property Text: string read GetText write SetText;
+  end;
+
+  IInput = interface
+    function ReadKey(LimitToLastKey: Boolean): string;
+    function ReadMouseButton: Boolean; overload;
+    function ReadMouseButton(MouseButton: TMouseButton): Boolean; overload;
+    function GetMousePosition(LimitToBounds: Boolean): TPoint;
+  end;
+
   TTurtleCanvas = class
-  type
-    TOutputLogMessage = procedure (Sender: TObject; const Text: string) of object;
   private
-    FImageCanvas: IImageCanvas;
+    FOutputGraphics: IOutputGraphics;
     FColor: TColor32;
-    FOnOutputLogMessage: TOutputLogMessage;
-    FOnInvalidate: TNotifyEvent;
     function GetHeight: Integer;
     function GetWidth: Integer;
     function GetPixel(X, Y: Integer): TColor32; inline;
     procedure SetPixel(X, Y: Integer; Color: TColor32); inline;
   public
-    constructor Create(ImageCanvas: IImageCanvas);
+    constructor Create(OutputGraphics: IOutputGraphics);
 
     procedure Clear; overload;
     procedure Clear(Color: TColor32); overload;
@@ -58,14 +72,10 @@ type
 
     procedure Invalidate;
 
-    property ImageCanvas: IImageCanvas read FImageCanvas;
     property Width: Integer read GetWidth;
     property Height: Integer read GetHeight;
     property Color: TColor32 read FColor write FColor;
     property Pixel[X, Y: Integer]: TColor32 read GetPixel write SetPixel;
-
-    property OnOutputLogMessage: TOutputLogMessage read FOnOutputLogMessage write FOnOutputLogMessage;
-    property OnInvalidate: TNotifyEvent read FOnInvalidate write FOnInvalidate;
   end;
 
   TTurtleCursor = class
@@ -112,14 +122,30 @@ type
 
   TTextOutput = class
   private
-    FStringList: TStringList;
+    FOutputText: IOutputText;
     function GetText: string;
     procedure SetText(const Value: string);
   public
-    constructor Create(StringList: TStringList);
+    constructor Create(OutputText: IOutputText);
+
+    procedure AddString(Text: string);
+    procedure AddLine(Text: string);
     procedure Clear;
 
     property Text: string read GetText write SetText;
+    property OutputText: IOutputText read FOutputText;
+  end;
+
+  TTurtleInput = class
+  private
+    FInput: IInput;
+  public
+    constructor Create(Input: IInput);
+
+    function ReadKey(LimitToLastKey: Boolean = True): string;
+    function ReadMouseButton: Boolean; overload;
+    function ReadMouseButton(MouseButton: TMouseButton): Boolean; overload;
+    function GetMousePosition(LimitToBounds: Boolean = True): TPoint;
   end;
 
   TLogCall = (lcExecution, lcClear, lcCenter, lcComposeColor,
@@ -130,9 +156,11 @@ type
 
   TDataModuleShared = class(TDataModule)
     DelphiWebScript: TDelphiWebScript;
-    dwsUnitBasic: TdwsUnit;
+    dwsUnitText: TdwsUnit;
     dwsUnitIntermediate: TdwsUnit;
     dwsUnitAdvanced: TdwsUnit;
+    dwsUnitBasic: TdwsUnit;
+    dwsUnitInput: TdwsUnit;
 
     procedure dwsClassesTCanvasMethodsClearEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCanvasMethodsGetColorEval(Info: TProgramInfo; ExtObject: TObject);
@@ -153,6 +181,11 @@ type
     procedure dwsClassesTCursorMethodsSetVisibleEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCursorMethodsTurnLeftEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCursorMethodsTurnRightEval(Info: TProgramInfo; ExtObject: TObject);
+    procedure dwsClassesTTextOutputMethodsClearEval(Info: TProgramInfo; ExtObject: TObject);
+    procedure dwsClassesTTextOutputMethodsGetTextEval(Info: TProgramInfo; ExtObject: TObject);
+    procedure dwsClassesTTextOutputMethodsSetTextEval(Info: TProgramInfo; ExtObject: TObject);
+    procedure dwsClassesTTextOutputMethodsWriteEval(Info: TProgramInfo; ExtObject: TObject);
+    procedure dwsClassesTTextOutputMethodsWriteLineEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsFunctionsCenterEval(info: TProgramInfo);
     procedure dwsFunctionsClearEval(info: TProgramInfo);
     procedure dwsFunctionsComposeColorEval(info: TProgramInfo);
@@ -160,6 +193,9 @@ type
     procedure dwsFunctionsCosineEval(info: TProgramInfo);
     procedure dwsFunctionsDelayEval(info: TProgramInfo);
     procedure dwsFunctionsDrawEval(info: TProgramInfo);
+    procedure dwsFunctionsGetMousePositionEval(info: TProgramInfo);
+    procedure dwsFunctionsGetMousePositionXEval(info: TProgramInfo);
+    procedure dwsFunctionsGetMousePositionYEval(info: TProgramInfo);
     procedure dwsFunctionsGetPixelColorEval(info: TProgramInfo);
     procedure dwsFunctionsGoEval(info: TProgramInfo);
     procedure dwsFunctionsHomeEval(info: TProgramInfo);
@@ -174,8 +210,11 @@ type
     procedure dwsFunctionsTangentEval(info: TProgramInfo);
     procedure dwsFunctionsTurnLeftEval(info: TProgramInfo);
     procedure dwsFunctionsTurnRightEval(info: TProgramInfo);
+    procedure dwsFunctionsWriteEval(info: TProgramInfo);
+    procedure dwsFunctionsWriteLineEval(info: TProgramInfo);
     procedure dwsInstanceCanvasInstantiate(info: TProgramInfo; var ExtObject: TObject);
     procedure dwsInstanceCursorInstantiate(info: TProgramInfo; var ExtObject: TObject);
+    procedure dwsInstancesTextOutputInstantiate(info: TProgramInfo; var ExtObject: TObject);
     procedure dwsVariablesAntiAliasedLineReadVar(info: TProgramInfo; var value: Variant);
     procedure dwsVariablesAntiAliasedLineWriteVar(info: TProgramInfo; const value: Variant);
     procedure dwsVariablesCanvasColorReadVar(info: TProgramInfo; var value: Variant);
@@ -190,23 +229,37 @@ type
     procedure dwsVariablesCursorPositionXWriteVar(info: TProgramInfo; const value: Variant);
     procedure dwsVariablesCursorPositionYReadVar(info: TProgramInfo; var value: Variant);
     procedure dwsVariablesCursorPositionYWriteVar(info: TProgramInfo; const value: Variant);
-    procedure dwsVariablesCursorReadVar(info: TProgramInfo; var value: Variant);
-    procedure dwsVariablesCursorWriteVar(info: TProgramInfo; const value: Variant);
+    procedure dwsVariablesCursorVisibleReadVar(info: TProgramInfo; var value: Variant);
+    procedure dwsVariablesCursorVisibleWriteVar(info: TProgramInfo; const value: Variant);
     procedure DelphiWebScriptInclude(const scriptName: string; var scriptSource: string);
     function DelphiWebScriptNeedUnit(const unitName: string; var unitSource: string): IdwsUnit;
+    procedure dwsFunctionsReadKeyEval(info: TProgramInfo);
+    procedure dwsFunctionsReadMouseButtonEval(info: TProgramInfo);
   type
     TOnLogCallEvent = procedure(Sender: TObject; CallType: TLogCall;
       ClassAccess: Boolean = False) of object;
   private
     FTurtleCanvas: TTurtleCanvas;
     FTurtleCursor: TTurtleCursor;
+    FTurtleInput: TTurtleInput;
     FTextOutput: TTextOutput;
     FOnLogCall: TOnLogCallEvent;
+    FOutputGraphics: IOutputGraphics;
+    FOutputText: IOutputText;
+    FInput: IInput;
     procedure LogCall(CallType: TLogCall; ClassAccess: Boolean = False);
+    procedure SetOutputGraphics(const Value: IOutputGraphics);
+    procedure SetOutputText(const Value: IOutputText);
+    procedure SetInput(const Value: IInput);
   public
-    property TurtleCanvas: TTurtleCanvas read FTurtleCanvas write FTurtleCanvas;
-    property TurtleCursor: TTurtleCursor read FTurtleCursor write FTurtleCursor;
-    property TextOutput: TTextOutput read FTextOutput write FTextOutput;
+    property OutputGraphics: IOutputGraphics read FOutputGraphics write SetOutputGraphics;
+    property OutputText: IOutputText read FOutputText write SetOutputText;
+    property Input: IInput read FInput write SetInput;
+
+    property TurtleCanvas: TTurtleCanvas read FTurtleCanvas;
+    property TurtleCursor: TTurtleCursor read FTurtleCursor;
+    property TextOutput: TTextOutput read FTextOutput;
+
     property OnLogCall: TOnLogCallEvent read FOnLogCall write FOnLogCall;
   end;
 
@@ -224,69 +277,81 @@ uses
 
 { TTurtleCanvas }
 
-constructor TTurtleCanvas.Create(ImageCanvas: IImageCanvas);
+constructor TTurtleCanvas.Create(OutputGraphics: IOutputGraphics);
 begin
-  FImageCanvas := ImageCanvas;
+  FOutputGraphics := OutputGraphics;
   FColor := 0;
 end;
 
 procedure TTurtleCanvas.DrawLine(AX, AY, BX, BY: Integer; Color: TColor32);
 begin
-  FImageCanvas.DrawLine(System.Types.Point(AX, AY), System.Types.Point(BX, BY),
-    Color);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.DrawLine(System.Types.Point(AX, AY),
+      System.Types.Point(BX, BY), Color);
 end;
 
 procedure TTurtleCanvas.DrawLine(A, B: TPoint; Color: TColor32);
 begin
-  FImageCanvas.DrawLine(A, B, Color);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.DrawLine(A, B, Color);
 end;
 
 procedure TTurtleCanvas.DrawLineF(A, B: TPointF; Color: TColor32);
 begin
-  FImageCanvas.DrawLineF(A, B, Color);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.DrawLineF(A, B, Color);
 end;
 
 function TTurtleCanvas.GetHeight: Integer;
 begin
-  Result := FImageCanvas.Height;
+  Result := 0;
+  if Assigned(FOutputGraphics) then
+    Result := FOutputGraphics.Height;
 end;
 
 function TTurtleCanvas.GetPixel(X, Y: Integer): TColor32;
 begin
-  Result := FImageCanvas.PixelColor[X, Y];
+  Result := 0;
+  if Assigned(FOutputGraphics) then
+    Result := FOutputGraphics.PixelColor[X, Y];
 end;
 
 function TTurtleCanvas.GetWidth: Integer;
 begin
-  Result := FImageCanvas.Width;
+  Result := 0;
+  if Assigned(FOutputGraphics) then
+    Result := FOutputGraphics.Width;
 end;
 
 procedure TTurtleCanvas.Invalidate;
 begin
-  FImageCanvas.Invalidate;
-  if Assigned(FOnInvalidate) then
-    FOnInvalidate(Self);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.Invalidate;
 end;
 
 procedure TTurtleCanvas.SaveToFile(FileName: TFileName);
 begin
-  FImageCanvas.SaveToFile(FileName);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.SaveToFile(FileName);
 end;
 
 procedure TTurtleCanvas.SetPixel(X, Y: Integer; Color: TColor32);
 begin
-  FImageCanvas.PixelColor[X, Y] := Color;
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.PixelColor[X, Y] := Color;
 end;
 
 procedure TTurtleCanvas.Clear;
 begin
-  FImageCanvas.Clear(FColor);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.Clear(FColor);
 end;
 
 procedure TTurtleCanvas.Clear(Color: TColor32);
 begin
   FColor := Color;
-  FImageCanvas.Clear(Color);
+  if Assigned(FOutputGraphics) then
+    FOutputGraphics.Clear(Color);
 end;
 
 
@@ -408,24 +473,62 @@ end;
 
 { TTextOutput }
 
-constructor TTextOutput.Create(StringList: TStringList);
+constructor TTextOutput.Create(OutputText: IOutputText);
 begin
-  FStringList := StringList;
+  FOutputText := OutputText;
+end;
+
+procedure TTextOutput.AddLine(Text: string);
+begin
+  FOutputText.AddLine(Text);
+end;
+
+procedure TTextOutput.AddString(Text: string);
+begin
+  FOutputText.AddString(Text);
 end;
 
 procedure TTextOutput.Clear;
 begin
-  FStringList.Clear;
+  FOutputText.Clear;
 end;
 
 function TTextOutput.GetText: string;
 begin
-  Result := FStringList.Text;
+  Result := FOutputText.Text;
 end;
 
 procedure TTextOutput.SetText(const Value: string);
 begin
-  FStringList.Text := Value;
+  FOutputText.Text := Value;
+end;
+
+
+{ TTurtleInput }
+
+constructor TTurtleInput.Create(Input: IInput);
+begin
+  FInput := Input;
+end;
+
+function TTurtleInput.GetMousePosition(LimitToBounds: Boolean = True): TPoint;
+begin
+  Result := FInput.GetMousePosition(LimitToBounds);
+end;
+
+function TTurtleInput.ReadKey(LimitToLastKey: Boolean = True): string;
+begin
+  Result := FInput.ReadKey(LimitToLastKey);
+end;
+
+function TTurtleInput.ReadMouseButton: Boolean;
+begin
+  Result := FInput.ReadMouseButton;
+end;
+
+function TTurtleInput.ReadMouseButton(MouseButton: TMouseButton): Boolean;
+begin
+  Result := FInput.ReadMouseButton(MouseButton);
 end;
 
 
@@ -441,7 +544,7 @@ end;
 procedure TDataModuleShared.dwsFunctionsClearEval(info: TProgramInfo);
 begin
   // clear text output
-//TODO  ListBoxOutput.Items.Clear;
+  FTextOutput.Clear;
 
   // clear bitmap
   if info.FuncSym.Params.Count = 1 then
@@ -497,8 +600,6 @@ begin
     Sleep(info.ParamAsInteger[0]);
 
   FTurtleCanvas.Invalidate;
-
-// TODO  ListBoxOutput.Items.Text := FExecutionThread.Output;
 
   LogCall(lcDelay);
 end;
@@ -726,6 +827,95 @@ begin
   ExtObject := FTurtleCursor;
 end;
 
+procedure TDataModuleShared.dwsClassesTTextOutputMethodsWriteEval(
+  Info: TProgramInfo; ExtObject: TObject);
+begin
+  Assert(ExtObject is TTextOutput);
+  FTextOutput.AddString(Info.ParamAsString[0]);
+end;
+
+procedure TDataModuleShared.dwsClassesTTextOutputMethodsWriteLineEval(
+  Info: TProgramInfo; ExtObject: TObject);
+begin
+  Assert(ExtObject is TTextOutput);
+  FTextOutput.AddString(Info.ParamAsString[0]);
+end;
+
+procedure TDataModuleShared.dwsInstancesTextOutputInstantiate(
+  info: TProgramInfo; var ExtObject: TObject);
+begin
+  ExtObject := FTextOutput;
+end;
+
+procedure TDataModuleShared.dwsFunctionsReadKeyEval(
+  info: TProgramInfo);
+begin
+  info.ResultAsString := FTurtleInput.ReadKey;
+end;
+
+procedure TDataModuleShared.dwsFunctionsReadMouseButtonEval(
+  info: TProgramInfo);
+begin
+  if info.FuncSym.Params.Count = 0 then
+    info.ResultAsBoolean := FTurtleInput.ReadMouseButton
+  else
+    info.ResultAsBoolean := FTurtleInput.ReadMouseButton(TMouseButton(
+      info.ParamAsInteger[0]));
+end;
+
+procedure TDataModuleShared.dwsClassesTTextOutputMethodsClearEval(
+  Info: TProgramInfo; ExtObject: TObject);
+begin
+  Assert(ExtObject is TTextOutput);
+  FTextOutput.Clear;
+end;
+
+procedure TDataModuleShared.dwsClassesTTextOutputMethodsGetTextEval(
+  Info: TProgramInfo; ExtObject: TObject);
+begin
+  Assert(ExtObject is TTextOutput);
+  Info.ResultAsString := FTextOutput.Text;
+end;
+
+procedure TDataModuleShared.dwsClassesTTextOutputMethodsSetTextEval(
+  Info: TProgramInfo; ExtObject: TObject);
+begin
+  Assert(ExtObject is TTextOutput);
+  FTextOutput.Text := Info.ParamAsString[0];
+end;
+
+procedure TDataModuleShared.dwsFunctionsGetMousePositionEval(
+  info: TProgramInfo);
+var
+  Pos: TPoint;
+begin
+  Pos := Input.GetMousePosition(info.ParamAsBoolean[0]);
+  info.ResultVars.Member['X'].ValueAsInteger := Pos.X;
+  info.ResultVars.Member['Y'].ValueAsInteger := Pos.Y;
+end;
+
+procedure TDataModuleShared.dwsFunctionsGetMousePositionXEval(
+  info: TProgramInfo);
+begin
+  info.ResultAsInteger := Input.GetMousePosition(info.ParamAsBoolean[0]).X;
+end;
+
+procedure TDataModuleShared.dwsFunctionsGetMousePositionYEval(
+  info: TProgramInfo);
+begin
+  info.ResultAsInteger := Input.GetMousePosition(info.ParamAsBoolean[0]).Y;
+end;
+
+procedure TDataModuleShared.dwsFunctionsWriteEval(info: TProgramInfo);
+begin
+  FTextOutput.AddString(info.ParamAsString[0]);
+end;
+
+procedure TDataModuleShared.dwsFunctionsWriteLineEval(info: TProgramInfo);
+begin
+  FTextOutput.AddLine(info.ParamAsString[0]);
+end;
+
 procedure TDataModuleShared.dwsFunctionsCosineEval(info: TProgramInfo);
 begin
   info.ResultAsFloat := Cos(DegToRad(info.ParamAsFloat[0]));
@@ -870,13 +1060,13 @@ begin
   FTurtleCursor.Position := PointF(FTurtleCursor.Position.X, Value);
 end;
 
-procedure TDataModuleShared.dwsVariablesCursorReadVar(info: TProgramInfo;
+procedure TDataModuleShared.dwsVariablesCursorVisibleReadVar(info: TProgramInfo;
   var value: Variant);
 begin
   value := FTurtleCursor.Visible;
 end;
 
-procedure TDataModuleShared.dwsVariablesCursorWriteVar(info: TProgramInfo;
+procedure TDataModuleShared.dwsVariablesCursorVisibleWriteVar(info: TProgramInfo;
   const value: Variant);
 begin
   FTurtleCursor.Visible := value;
@@ -887,6 +1077,48 @@ procedure TDataModuleShared.LogCall(CallType: TLogCall;
 begin
   if Assigned(FOnLogCall) then
     FOnLogCall(Self, CallType, ClassAccess);
+end;
+
+procedure TDataModuleShared.SetInput(const Value: IInput);
+begin
+  if Value <> Input then
+  begin
+    FTurtleInput.Free;
+
+    if Assigned(Value) then
+      FTurtleInput := TTurtleInput.Create(Value);
+
+    FInput := Value;
+  end;
+end;
+
+procedure TDataModuleShared.SetOutputGraphics(const Value: IOutputGraphics);
+begin
+  if Value <> OutputGraphics then
+  begin
+    FTurtleCanvas.Free;
+    FTurtleCursor.Free;
+
+    if Assigned(Value) then
+    begin
+      FTurtleCanvas := TTurtleCanvas.Create(Value);
+      FTurtleCursor := TTurtleCursor.Create(FTurtleCanvas);
+    end;
+
+    FOutputGraphics := Value;
+  end;
+end;
+
+procedure TDataModuleShared.SetOutputText(const Value: IOutputText);
+begin
+  if Value <> OutputText then
+  begin
+    FTextOutput.Free;
+    if Assigned(Value) then
+      FTextOutput := TTextOutput.Create(Value);
+
+    FOutputText := Value;
+  end;
 end;
 
 end.

@@ -9,125 +9,99 @@ object DataModuleShared: TDataModuleShared
     Left = 72
     Top = 16
   end
-  object dwsUnitBasic: TdwsUnit
+  object dwsUnitText: TdwsUnit
     Script = DelphiWebScript
+    Classes = <
+      item
+        Name = 'TTextOutput'
+        Methods = <
+          item
+            Name = 'GetText'
+            ResultType = 'String'
+            OnEval = dwsClassesTTextOutputMethodsGetTextEval
+            Visibility = cvPrivate
+            Kind = mkFunction
+          end
+          item
+            Name = 'SetText'
+            Parameters = <
+              item
+                Name = 'Value'
+                DataType = 'String'
+              end>
+            OnEval = dwsClassesTTextOutputMethodsSetTextEval
+            Visibility = cvPrivate
+            Kind = mkProcedure
+          end
+          item
+            Name = 'Clear'
+            OnEval = dwsClassesTTextOutputMethodsClearEval
+            Kind = mkProcedure
+          end
+          item
+            Name = 'Write'
+            Parameters = <
+              item
+                Name = 'Value'
+                DataType = 'String'
+              end>
+            OnEval = dwsClassesTTextOutputMethodsWriteEval
+            Kind = mkProcedure
+          end
+          item
+            Name = 'WriteLine'
+            Parameters = <
+              item
+                Name = 'Value'
+                DataType = 'string'
+              end>
+            OnEval = dwsClassesTTextOutputMethodsWriteLineEval
+            Kind = mkProcedure
+          end>
+        Properties = <
+          item
+            Name = 'Text'
+            DataType = 'String'
+            ReadAccess = 'GetText'
+            WriteAccess = 'SetText'
+          end>
+      end>
     Functions = <
       item
-        Name = 'Clear'
-        Overloaded = True
-        OnEval = dwsFunctionsClearEval
-      end
-      item
-        Name = 'Turn'
-        Parameters = <
-          item
-            Name = 'Angle'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 90
-          end>
-        OnEval = dwsFunctionsTurnLeftEval
-      end
-      item
-        Name = 'Go'
-        Parameters = <
-          item
-            Name = 'Distance'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 10.000000000000000000
-          end>
-        OnEval = dwsFunctionsGoEval
-      end
-      item
-        Name = 'Draw'
-        Parameters = <
-          item
-            Name = 'Distance'
-            DataType = 'Float'
-            HasDefaultValue = True
-            DefaultValue = 10.000000000000000000
-          end>
-        OnEval = dwsFunctionsDrawEval
-      end
-      item
-        Name = 'Center'
+        Name = 'ClearText'
         OnEval = dwsFunctionsCenterEval
       end
       item
-        Name = 'Home'
-        OnEval = dwsFunctionsHomeEval
-      end
-      item
-        Name = 'Sine'
+        Name = 'WriteLine'
         Parameters = <
           item
-            Name = 'Value'
-            DataType = 'Float'
+            Name = 'Text'
+            DataType = 'Variant'
           end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsSineEval
+        OnEval = dwsFunctionsWriteLineEval
       end
       item
-        Name = 'Cosine'
+        Name = 'Write'
         Parameters = <
           item
-            Name = 'Value'
-            DataType = 'Float'
+            Name = 'Text'
+            DataType = 'Variant'
           end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsCosineEval
-      end
-      item
-        Name = 'Tangent'
-        Parameters = <
-          item
-            Name = 'Value'
-            DataType = 'Float'
-          end>
-        ResultType = 'Float'
-        OnEval = dwsFunctionsTangentEval
+        OnEval = dwsFunctionsWriteEval
       end>
-    Synonyms = <
+    Instances = <
       item
-        Name = 'Single'
-        DataType = 'Float'
-      end
-      item
-        Name = 'Double'
-        DataType = 'Float'
-      end
-      item
-        Name = 'Byte'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'Word'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'SmallInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'LongInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'ShortInt'
-        DataType = 'Integer'
-      end
-      item
-        Name = 'Real'
-        DataType = 'Float'
+        Name = 'TextOutput'
+        DataType = 'TTextOutput'
+        OnInstantiate = dwsInstancesTextOutputInstantiate
       end>
-    UnitName = 'TurtleBasic'
+    UnitName = 'Text'
     Variables = <
       item
         Name = 'CursorVisible'
         DataType = 'Boolean'
-        OnReadVar = dwsVariablesCursorReadVar
-        OnWriteVar = dwsVariablesCursorWriteVar
+        OnReadVar = dwsVariablesCursorVisibleReadVar
+        OnWriteVar = dwsVariablesCursorVisibleWriteVar
       end
       item
         Name = 'CursorAngle'
@@ -137,7 +111,7 @@ object DataModuleShared: TDataModuleShared
       end>
     StaticSymbols = False
     Left = 72
-    Top = 136
+    Top = 72
   end
   object dwsUnitIntermediate: TdwsUnit
     Script = DelphiWebScript
@@ -770,5 +744,231 @@ object DataModuleShared: TDataModuleShared
     StaticSymbols = False
     Left = 72
     Top = 248
+  end
+  object dwsUnitBasic: TdwsUnit
+    Script = DelphiWebScript
+    Functions = <
+      item
+        Name = 'Clear'
+        Overloaded = True
+        OnEval = dwsFunctionsClearEval
+      end
+      item
+        Name = 'Turn'
+        Parameters = <
+          item
+            Name = 'Angle'
+            DataType = 'Float'
+            HasDefaultValue = True
+            DefaultValue = 90
+          end>
+        OnEval = dwsFunctionsTurnLeftEval
+      end
+      item
+        Name = 'Go'
+        Parameters = <
+          item
+            Name = 'Distance'
+            DataType = 'Float'
+            HasDefaultValue = True
+            DefaultValue = 10.000000000000000000
+          end>
+        OnEval = dwsFunctionsGoEval
+      end
+      item
+        Name = 'Draw'
+        Parameters = <
+          item
+            Name = 'Distance'
+            DataType = 'Float'
+            HasDefaultValue = True
+            DefaultValue = 10.000000000000000000
+          end>
+        OnEval = dwsFunctionsDrawEval
+      end
+      item
+        Name = 'Center'
+        OnEval = dwsFunctionsCenterEval
+      end
+      item
+        Name = 'Home'
+        OnEval = dwsFunctionsHomeEval
+      end
+      item
+        Name = 'Sine'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsSineEval
+      end
+      item
+        Name = 'Cosine'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsCosineEval
+      end
+      item
+        Name = 'Tangent'
+        Parameters = <
+          item
+            Name = 'Value'
+            DataType = 'Float'
+          end>
+        ResultType = 'Float'
+        OnEval = dwsFunctionsTangentEval
+      end>
+    Synonyms = <
+      item
+        Name = 'Single'
+        DataType = 'Float'
+      end
+      item
+        Name = 'Double'
+        DataType = 'Float'
+      end
+      item
+        Name = 'Byte'
+        DataType = 'Integer'
+      end
+      item
+        Name = 'Word'
+        DataType = 'Integer'
+      end
+      item
+        Name = 'SmallInt'
+        DataType = 'Integer'
+      end
+      item
+        Name = 'LongInt'
+        DataType = 'Integer'
+      end
+      item
+        Name = 'ShortInt'
+        DataType = 'Integer'
+      end
+      item
+        Name = 'Real'
+        DataType = 'Float'
+      end>
+    UnitName = 'TurtleBasic'
+    Variables = <
+      item
+        Name = 'CursorVisible'
+        DataType = 'Boolean'
+        OnReadVar = dwsVariablesCursorVisibleReadVar
+        OnWriteVar = dwsVariablesCursorVisibleWriteVar
+      end
+      item
+        Name = 'CursorAngle'
+        DataType = 'Float'
+        OnReadVar = dwsVariablesCursorAngleReadVar
+        OnWriteVar = dwsVariablesCursorAngleWriteVar
+      end>
+    StaticSymbols = False
+    Left = 72
+    Top = 136
+  end
+  object dwsUnitInput: TdwsUnit
+    Script = DelphiWebScript
+    Dependencies.Strings = (
+      'TurtleIntermediate')
+    Enumerations = <
+      item
+        Name = 'TMouseButton'
+        Elements = <
+          item
+            Name = 'mbLeft'
+          end
+          item
+            Name = 'mbMiddle'
+          end
+          item
+            Name = 'mbRight'
+          end>
+      end>
+    Functions = <
+      item
+        Name = 'GetMousePositionX'
+        Parameters = <
+          item
+            Name = 'LimitToBounds'
+            DataType = 'Boolean'
+            HasDefaultValue = True
+            DefaultValue = False
+          end>
+        ResultType = 'Integer'
+        OnEval = dwsFunctionsGetMousePositionXEval
+      end
+      item
+        Name = 'GetMousePositionY'
+        Parameters = <
+          item
+            Name = 'LimitToBounds'
+            DataType = 'Boolean'
+            HasDefaultValue = True
+            DefaultValue = False
+          end>
+        ResultType = 'Integer'
+        OnEval = dwsFunctionsGetMousePositionYEval
+      end
+      item
+        Name = 'GetMousePosition'
+        Parameters = <
+          item
+            Name = 'LimitToBounds'
+            DataType = 'Boolean'
+            HasDefaultValue = True
+            DefaultValue = False
+          end>
+        ResultType = 'TPoint'
+        OnEval = dwsFunctionsGetMousePositionEval
+      end
+      item
+        Name = 'ReadKey'
+        ResultType = 'String'
+        OnEval = dwsFunctionsReadKeyEval
+      end
+      item
+        Name = 'ReadMouseButton'
+        Parameters = <
+          item
+            Name = 'MouseButton'
+            DataType = 'TMouseButton'
+          end>
+        ResultType = 'Boolean'
+        Overloaded = True
+        OnEval = dwsFunctionsReadMouseButtonEval
+      end
+      item
+        Name = 'ReadMouseButton'
+        ResultType = 'Boolean'
+        Overloaded = True
+        OnEval = dwsFunctionsReadMouseButtonEval
+      end>
+    Records = <
+      item
+        Name = 'TPoint'
+        Members = <
+          item
+            Name = 'X'
+            DataType = 'Integer'
+          end
+          item
+            Name = 'Y'
+            DataType = 'Integer'
+          end>
+        Properties = <>
+      end>
+    UnitName = 'Input'
+    StaticSymbols = False
+    Left = 160
+    Top = 72
   end
 end

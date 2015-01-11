@@ -16,6 +16,7 @@ object FormMain: TFormMain
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnKeyPress = FormKeyPress
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -114,6 +115,7 @@ object FormMain: TFormMain
         Scale = 1.000000000000000000
         ScaleMode = smNormal
         TabOrder = 0
+        OnKeyPress = FormKeyPress
         OnPaintStage = Image32PaintStage
         OnResize = Image32Resize
       end

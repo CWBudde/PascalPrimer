@@ -10,7 +10,7 @@ uses
   Vcl.ExtDlgs, Vcl.ComCtrls, Vcl.ImgList, Vcl.ToolWin, Vcl.Buttons,
 
   (* GR32 *)
-  GR32, GR32_Image, GR32_Transforms, GR32_PNG, GR32_Polygons,
+  GR32, GR32_Image, GR32_Layers, GR32_Transforms, GR32_PNG, GR32_Polygons,
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
@@ -76,7 +76,7 @@ type
 
   TAchievementProgress = array [TAchievements] of Integer;
 
-  TImage32Canvas = class(TInterfacedObject, IImageCanvas)
+  TOutputImage32 = class(TInterfacedObject, IOutputGraphics)
   private
     FImage32: TImage32;
     function GetHeight: Integer;
@@ -95,6 +95,54 @@ type
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
     property PixelColor[X, Y: Integer]: TColor32 read GetPixelColor write SetPixelColor;
+  end;
+
+  TOutputStrings = class(TInterfacedObject, IOutputText)
+  private
+    FStrings: TStrings;
+    function GetText: string;
+    procedure SetText(const Value: string);
+  public
+    constructor Create(Strings: TStrings);
+
+    procedure AddLine(Text: string);
+    procedure AddString(Text: string);
+    procedure Clear;
+
+    property Text: string read GetText write SetText;
+  end;
+
+  TOutputListBox = class(TInterfacedObject, IOutputText)
+  private
+    FListBox: TListBox;
+    function GetText: string;
+    procedure SetText(const Value: string);
+  public
+    constructor Create(ListBox: TListBox);
+
+    procedure AddLine(Text: string);
+    procedure AddString(Text: string);
+    procedure Clear;
+
+    property Text: string read GetText write SetText;
+  end;
+
+  TInputImage32 = class(TInterfacedObject, IInput)
+  private
+    FImage32: TImage32;
+    FKeysPressedHistory: string;
+    FMouseButton: array [TMouseButton] of Boolean;
+    procedure MouseDownHandler(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer; Layer: TCustomLayer);
+  public
+    constructor Create(Image32: TImage32);
+
+    function ReadKey(LimitToLastKey: Boolean): string;
+    function ReadMouseButton: Boolean; overload;
+    function ReadMouseButton(MouseButton: TMouseButton): Boolean; overload;
+    function GetMousePosition(LimitToBounds: Boolean): TPoint;
+
+    property KeysPressedHistory: string read FKeysPressedHistory write FKeysPressedHistory;
   end;
 
   TFormMain = class(TForm)
@@ -219,6 +267,7 @@ type
     procedure ActionFileOpenAccept(Sender: TObject);
     procedure ActionFileOpenBeforeExecute(Sender: TObject);
     procedure ActionFileSaveScriptAsAccept(Sender: TObject);
+    procedure ActionFileSaveScriptExecute(Sender: TObject);
     procedure ActionHelpAboutExecute(Sender: TObject);
     procedure ActionHelpDocumentationExecute(Sender: TObject);
     procedure ActionHelpTutorialExecute(Sender: TObject);
@@ -238,6 +287,10 @@ type
     procedure ActionScriptJustInTimeUpdate(Sender: TObject);
     procedure ActionScriptRunExecute(Sender: TObject);
     procedure BadgePaintBuffer(Sender: TObject);
+    procedure dwsUnitTeacherVariablesTutorialTextReadVar(info: TProgramInfo;
+      var value: Variant);
+    procedure dwsUnitTeacherVariablesTutorialTextWriteVar(info: TProgramInfo;
+      const value: Variant);
     procedure Image32PaintStage(Sender: TObject; Buffer: TBitmap32; StageNum: Cardinal);
     procedure Image32Resize(Sender: TObject);
     procedure ListBoxCompilerClick(Sender: TObject);
@@ -251,16 +304,12 @@ type
     procedure SynCodeSuggestionsShow(Sender: TObject);
     procedure SynEditChange(Sender: TObject);
     procedure SynEditGutterPaint(Sender: TObject; aLine, X, Y: Integer);
+    procedure SynEditSpecialLineColors(Sender: TObject; Line: Integer;
+      var Special: Boolean; var FG, BG: TColor);
     procedure SynEditStatusChange(Sender: TObject; Changes: TSynStatusChanges);
     procedure SynParametersExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
-    procedure SynEditSpecialLineColors(Sender: TObject; Line: Integer;
-      var Special: Boolean; var FG, BG: TColor);
-    procedure ActionFileSaveScriptExecute(Sender: TObject);
-    procedure dwsUnitTeacherVariablesTutorialTextReadVar(info: TProgramInfo;
-      var value: Variant);
-    procedure dwsUnitTeacherVariablesTutorialTextWriteVar(info: TProgramInfo;
-      const value: Variant);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -268,13 +317,10 @@ type
     FCompiledProgram: IdwsProgram;
     FCriticalSection: TCriticalSection;
 
+    FInput: TInputImage32;
     FAchievementLevel: TAchievementProgress;
     FPolygonInverter: TInvertPolygonFiller;
 
-(*
-    FTurtleCanvas: TTurtleCanvas;
-    FTurtleCursor: TTurtleCursor;
-*)
     FModified: Boolean;
     FCurrentFileName: TFileName;
     FOriginalCaption: string;
@@ -487,7 +533,7 @@ begin
   begin
     if Success then
     begin
-      FormMain.ListBoxOutput.Items.Text := FProgramExecution.Result.ToString;
+      FormMain.ListBoxOutput.Items.Add(FProgramExecution.Result.ToString);
       FormMain.StatusBar.Panels[1].Text := 'Executed';
     end
     else
@@ -511,49 +557,49 @@ begin
 end;
 
 
-{ TImage32Canvas }
+{ TOutputImage32 }
 
-constructor TImage32Canvas.Create(Image32: TImage32);
+constructor TOutputImage32.Create(Image32: TImage32);
 begin
   FImage32 := Image32;
 end;
 
-procedure TImage32Canvas.Clear(Color: TColor32);
+procedure TOutputImage32.Clear(Color: TColor32);
 begin
   FImage32.Bitmap.Clear(Color);
 end;
 
-procedure TImage32Canvas.DrawLine(A, B: TPoint; Color: TColor32);
+procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor32);
 begin
   FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, Color);
 end;
 
-procedure TImage32Canvas.DrawLineF(A, B: TPointF; Color: TColor32);
+procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor32);
 begin
   FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, Color);
 end;
 
-function TImage32Canvas.GetHeight: Integer;
+function TOutputImage32.GetHeight: Integer;
 begin
   Result := FImage32.Bitmap.Height;
 end;
 
-function TImage32Canvas.GetPixelColor(X, Y: Integer): TColor32;
+function TOutputImage32.GetPixelColor(X, Y: Integer): TColor32;
 begin
   Result := FImage32.Bitmap.PixelS[X, Y];
 end;
 
-function TImage32Canvas.GetWidth: Integer;
+function TOutputImage32.GetWidth: Integer;
 begin
   Result := FImage32.Bitmap.Width;
 end;
 
-procedure TImage32Canvas.Invalidate;
+procedure TOutputImage32.Invalidate;
 begin
   FImage32.Invalidate;
 end;
 
-procedure TImage32Canvas.SaveToFile(FileName: TFileName);
+procedure TOutputImage32.SaveToFile(FileName: TFileName);
 var
   FileExt: string;
 begin
@@ -580,9 +626,147 @@ begin
   end;
 end;
 
-procedure TImage32Canvas.SetPixelColor(X, Y: Integer; Value: TColor32);
+procedure TOutputImage32.SetPixelColor(X, Y: Integer; Value: TColor32);
 begin
   FImage32.Bitmap.PixelS[X, Y] := Value;
+end;
+
+
+{ TOutputStrings }
+
+constructor TOutputStrings.Create(Strings: TStrings);
+begin
+  FStrings := Strings;
+end;
+
+procedure TOutputStrings.AddLine(Text: string);
+begin
+  FStrings.Add(Text);
+end;
+
+procedure TOutputStrings.AddString(Text: string);
+begin
+  FStrings.Add(Text);
+end;
+
+procedure TOutputStrings.Clear;
+begin
+  FStrings.Clear;
+end;
+
+function TOutputStrings.GetText: string;
+begin
+  Result := FStrings.Text;
+end;
+
+
+procedure TOutputStrings.SetText(const Value: string);
+begin
+  FStrings.Text := Value;
+end;
+
+
+{ TOutputListBox }
+
+constructor TOutputListBox.Create(ListBox: TListBox);
+begin
+  FListBox := ListBox;
+end;
+
+procedure TOutputListBox.AddLine(Text: string);
+begin
+  FListBox.Items.Add(Text);
+end;
+
+procedure TOutputListBox.AddString(Text: string);
+begin
+  FListBox.Items.Add(Text);
+end;
+
+procedure TOutputListBox.Clear;
+begin
+  FListBox.Items.Clear;
+end;
+
+function TOutputListBox.GetText: string;
+begin
+  Result := FListBox.Items.Text;
+end;
+
+procedure TOutputListBox.SetText(const Value: string);
+begin
+  FListBox.Items.Text := Value;
+end;
+
+
+{ TInputImage32 }
+
+constructor TInputImage32.Create(Image32: TImage32);
+begin
+  FImage32 := Image32;
+  FImage32.OnMouseDown := MouseDownHandler;
+  FKeysPressedHistory := '';
+end;
+
+procedure TInputImage32.MouseDownHandler(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer; Layer: TCustomLayer);
+begin
+  FMouseButton[Button] := True;
+  FImage32.SetFocus;
+end;
+
+function TInputImage32.ReadKey(LimitToLastKey: Boolean): string;
+begin
+  // Check if no key has been pressed
+  if Length(FKeysPressedHistory) = 0 then
+    Exit('');
+
+  if LimitToLastKey then
+  begin
+    Result := FKeysPressedHistory[Length(FKeysPressedHistory)];
+    FKeysPressedHistory := '';
+  end
+  else
+  begin
+    if Length(FKeysPressedHistory) > 0 then
+    begin
+      Result := FKeysPressedHistory[1];
+      Delete(FKeysPressedHistory, 1, 1);
+    end;
+  end;
+end;
+
+function TInputImage32.ReadMouseButton: Boolean;
+begin
+  Result := FMouseButton[mbLeft] or FMouseButton[mbMiddle] or FMouseButton[mbRight];
+  FMouseButton[mbLeft] := False;
+  FMouseButton[mbMiddle] := False;
+  FMouseButton[mbRight] := False;
+end;
+
+function TInputImage32.ReadMouseButton(MouseButton: TMouseButton): Boolean;
+begin
+  Result := FMouseButton[MouseButton];
+  FMouseButton[MouseButton] := False;
+end;
+
+function TInputImage32.GetMousePosition(LimitToBounds: Boolean): TPoint;
+var
+  Pos: TPoint;
+begin
+  Pos := Mouse.CursorPos;
+  Result := FImage32.ScreenToClient(Pos);
+  if LimitToBounds then
+  begin
+    if Pos.X < 0 then
+      Pos.X := 0;
+    if Pos.Y < 0 then
+      Pos.Y := 0;
+    if Pos.X > FImage32.Width then
+      Pos.X := FImage32.Width;
+    if Pos.Y < FImage32.Height then
+      Pos.Y := FImage32.Height;
+  end;
 end;
 
 
@@ -606,8 +790,11 @@ begin
   FSuggestionWhiteList := TStringList.Create;
   ResetSuggestionWhitelist;
 
-  DataModuleShared.TurtleCanvas := TTurtleCanvas.Create(TImage32Canvas.Create(Image32));
-  DataModuleShared.TurtleCursor := TTurtleCursor.Create(DataModuleShared.TurtleCanvas);
+  FInput := TInputImage32.Create(Image32);
+
+  DataModuleShared.OutputGraphics := TOutputImage32.Create(Image32);
+  DataModuleShared.OutputText := TOutputListBox.Create(ListBoxOutput);
+  DataModuleShared.Input := FInput;
   DataModuleShared.OnLogCall := LogCallHandler;
 
   FWebUpdate := TWebUpdate.Create(CWebUpdateUrl);
@@ -623,13 +810,10 @@ end;
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
   FWebUpdate.Free;
-(*
-  FTurtleCursor.Free;
-  FTurtleCanvas.Free;
-*)
   FSuggestionWhiteList.Free;
   FStatistics.Free;
 
+  // stop background compilation
   if Assigned(FBackgroundCompilationThread) then
   begin
     FBackgroundCompilationThread.Terminate;
@@ -637,8 +821,28 @@ begin
     FreeAndNil(FBackgroundCompilationThread);
   end;
 
+  // eventually stop execution
+  if Assigned(FExecutionThread) then
+  begin
+    FExecutionThread.Abort;
+    FExecutionThread.Terminate;
+    FExecutionThread := nil;
+  end;
+
+  // release interfaces
+  FInput := nil;
+  DataModuleShared.OutputGraphics := nil;
+  DataModuleShared.OutputText := nil;
+  DataModuleShared.Input := nil;
+
   FreeAndNil(FCriticalSection);
   FreeAndNil(FPolygonInverter);
+end;
+
+procedure TFormMain.FormKeyPress(Sender: TObject; var Key: Char);
+begin
+  // append key
+  FInput.KeysPressedHistory := FInput.KeysPressedHistory + Key;
 end;
 
 procedure TFormMain.FormShow(Sender: TObject);
