@@ -24,7 +24,7 @@ type
     procedure Clear(Color: TColor32);
     procedure DrawLine(A, B: TPoint; Color: TColor32);
     procedure DrawLineF(A, B: TPointF; Color: TColor32);
-    procedure Invalidate;
+    procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
     property Height: Integer read GetHeight;
@@ -70,7 +70,7 @@ type
 
     procedure SaveToFile(FileName: TFileName);
 
-    procedure Invalidate;
+    procedure Invalidate(WaitForRefresh: Boolean = False);
 
     property Width: Integer read GetWidth;
     property Height: Integer read GetHeight;
@@ -323,10 +323,10 @@ begin
     Result := FOutputGraphics.Width;
 end;
 
-procedure TTurtleCanvas.Invalidate;
+procedure TTurtleCanvas.Invalidate(WaitForRefresh: Boolean);
 begin
   if Assigned(FOutputGraphics) then
-    FOutputGraphics.Invalidate;
+    FOutputGraphics.Invalidate(WaitForRefresh);
 end;
 
 procedure TTurtleCanvas.SaveToFile(FileName: TFileName);
@@ -599,7 +599,7 @@ begin
   if DelayTime > 0 then
     Sleep(info.ParamAsInteger[0]);
 
-  FTurtleCanvas.Invalidate;
+  FTurtleCanvas.Invalidate(info.ParamAsBoolean[1]);
 
   LogCall(lcDelay);
 end;

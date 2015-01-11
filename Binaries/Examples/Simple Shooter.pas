@@ -34,7 +34,7 @@ begin
          (Abs(MousePos.Y - Stars[i].Pos.Y) < Stars[i].Size div 2) then
       begin
         Inc(Count);
-        TextOutput.Text := 'Hit count: ' + IntToStr(Count);
+        TextOutput.Text := 'Hit count: ' + IntToStr(Count) + ' / 10';
         DrawMark(Stars[i].Pos, Stars[i].Size, clBlack);
         RandomizeStar(Stars[i]);
         Break;
@@ -60,14 +60,14 @@ procedure MainLoop;
 begin
   repeat
     Tick;
-    Delay(100);
+    Delay(100, True);
   until (ReadKey <> '') or (Count > 9);
 end;
 
 procedure WinAnimation;
 begin
   Home;
-  for var i := 0 to 400 do
+  for var i := 0 to Max(ClientWidth, ClientHeight) do
   begin
     CursorColor := ComposeColorHSL(i * 0.01, 1, 0.5);
     Draw(1 + 0.5 * i);

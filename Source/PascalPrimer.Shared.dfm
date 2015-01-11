@@ -615,6 +615,14 @@ object DataModuleShared: TDataModuleShared
           item
             Name = 'Milliseconds'
             DataType = 'Integer'
+            HasDefaultValue = True
+            DefaultValue = 100
+          end
+          item
+            Name = 'WaitForRefresh'
+            DataType = 'Boolean'
+            HasDefaultValue = True
+            DefaultValue = False
           end>
         OnEval = dwsFunctionsDelayEval
       end

@@ -184,27 +184,32 @@ object FormMain: TFormMain
     ParentDoubleBuffered = False
     TabOrder = 3
     Transparent = True
-    object ToolButtonOpen: TToolButton
+    object ToolButton1: TToolButton
       Left = 0
+      Top = 0
+      Action = ActionFileNew
+    end
+    object ToolButtonOpen: TToolButton
+      Left = 23
       Top = 0
       Action = ActionFileOpen
       AutoSize = True
     end
     object ToolButtonSave: TToolButton
-      Left = 23
+      Left = 46
       Top = 0
-      Action = ActionFileSaveScriptAs
+      Action = ActionFileSaveScript
       AutoSize = True
     end
     object ToolButtonExit: TToolButton
-      Left = 46
+      Left = 69
       Top = 0
       AutoSize = True
       Caption = 'ToolButtonExit'
       ImageIndex = 2
     end
     object ToolButtonSeparator1: TToolButton
-      Left = 69
+      Left = 92
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator1'
@@ -212,37 +217,37 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonCopy: TToolButton
-      Left = 77
+      Left = 100
       Top = 0
       Action = ActionEditCopy
       AutoSize = True
     end
     object ToolButtonCut: TToolButton
-      Left = 100
+      Left = 123
       Top = 0
       Action = ActionEditCut
       AutoSize = True
     end
     object ToolButtonPaste: TToolButton
-      Left = 123
+      Left = 146
       Top = 0
       Action = ActionEditPaste
       AutoSize = True
     end
     object ToolButtonSelectAll: TToolButton
-      Left = 146
+      Left = 169
       Top = 0
       Action = ActionEditSelectAll
       AutoSize = True
     end
     object ToolButtonUndo: TToolButton
-      Left = 169
+      Left = 192
       Top = 0
       Action = ActionEditUndo
       AutoSize = True
     end
     object ToolButtonSeparator2: TToolButton
-      Left = 192
+      Left = 215
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator2'
@@ -250,13 +255,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonOptions: TToolButton
-      Left = 200
+      Left = 223
       Top = 0
       Action = ActionOptions
       AutoSize = True
     end
     object ToolButtonSeparator3: TToolButton
-      Left = 223
+      Left = 246
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator3'
@@ -264,13 +269,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonFind: TToolButton
-      Left = 231
+      Left = 254
       Top = 0
       Action = ActionSearchFind
       AutoSize = True
     end
     object ToolButtonSeparator4: TToolButton
-      Left = 254
+      Left = 277
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator4'
@@ -278,13 +283,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonCompile: TToolButton
-      Left = 262
+      Left = 285
       Top = 0
       Action = ActionScriptCompile
       AutoSize = True
     end
     object ToolButtonRun: TToolButton
-      Left = 285
+      Left = 308
       Top = 0
       Action = ActionScriptRun
     end

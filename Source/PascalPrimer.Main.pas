@@ -89,7 +89,7 @@ type
     procedure Clear(Color: TColor32);
     procedure DrawLine(A, B: TPoint; Color: TColor32);
     procedure DrawLineF(A, B: TPointF; Color: TColor32);
-    procedure Invalidate;
+    procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
     property Height: Integer read GetHeight;
@@ -259,6 +259,7 @@ type
     ToolButtonSeparator3: TToolButton;
     ToolButtonSeparator4: TToolButton;
     ToolButtonUndo: TToolButton;
+    ToolButton1: TToolButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -594,9 +595,12 @@ begin
   Result := FImage32.Bitmap.Width;
 end;
 
-procedure TOutputImage32.Invalidate;
+procedure TOutputImage32.Invalidate(WaitForRefresh: Boolean);
 begin
-  FImage32.Invalidate;
+  if WaitForRefresh then
+    FImage32.Refresh
+  else
+    FImage32.Invalidate;
 end;
 
 procedure TOutputImage32.SaveToFile(FileName: TFileName);
