@@ -6,11 +6,8 @@ uses
   System.SysUtils, System.Classes, System.Types, System.Generics.Collections,
   System.Variants, System.UITypes,
 
-  (* GR32 *)
-  GR32,
-
   (* DWS *)
-  dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
+  dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions,
   {$IFNDEF WIN64} dwsJIT, dwsJITx86, {$ENDIF} dwsStrings, dwsUnitSymbols,
   dwsFunctions, dwsTokenizer;
 
@@ -18,18 +15,21 @@ type
   IOutputGraphics = interface
     function GetHeight: Integer;
     function GetWidth: Integer;
-    function GetPixelColor(X, Y: Integer): TColor32;
-    procedure SetPixelColor(X, Y: Integer; Value: TColor32);
+    function GetPixelColor(X, Y: Integer): TColor;
+    procedure SetPixelColor(X, Y: Integer; Value: TColor);
 
-    procedure Clear(Color: TColor32);
-    procedure DrawLine(A, B: TPoint; Color: TColor32);
-    procedure DrawLineF(A, B: TPointF; Color: TColor32);
+    function ComposeColor(R, G, B, A: Byte): TColor;
+    procedure Clear(Color: TColor);
     procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
+    procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawLine(A, B: TPoint; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor);
+
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
-    property PixelColor[X, Y: Integer]: TColor32 read GetPixelColor write SetPixelColor;
+    property PixelColor[X, Y: Integer]: TColor read GetPixelColor write SetPixelColor;
   end;
 
   IOutputText = interface
@@ -53,20 +53,24 @@ type
   TTurtleCanvas = class
   private
     FOutputGraphics: IOutputGraphics;
-    FColor: TColor32;
+    FColor: TColor;
     function GetHeight: Integer;
     function GetWidth: Integer;
-    function GetPixel(X, Y: Integer): TColor32; inline;
-    procedure SetPixel(X, Y: Integer; Color: TColor32); inline;
+    function GetPixel(X, Y: Integer): TColor; inline;
+    procedure SetPixel(X, Y: Integer; Color: TColor); inline;
   public
     constructor Create(OutputGraphics: IOutputGraphics);
 
     procedure Clear; overload;
-    procedure Clear(Color: TColor32); overload;
+    procedure Clear(Color: TColor); overload;
 
-    procedure DrawLine(AX, AY, BX, BY: Integer; Color: TColor32); overload;
-    procedure DrawLine(A, B: TPoint; Color: TColor32); overload;
-    procedure DrawLineF(A, B: TPointF; Color: TColor32);
+    function ComposeColorHSL(H, S, L: Double; A: Byte = $FF): TColor;
+    function ComposeColor(R, G, B: Byte; A: Byte = $FF): TColor;
+
+    procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawLine(AX, AY, BX, BY: Integer; Color: TColor); overload;
+    procedure DrawLine(A, B: TPoint; Color: TColor); overload;
+    procedure DrawLineF(A, B: TPointF; Color: TColor);
 
     procedure SaveToFile(FileName: TFileName);
 
@@ -74,18 +78,18 @@ type
 
     property Width: Integer read GetWidth;
     property Height: Integer read GetHeight;
-    property Color: TColor32 read FColor write FColor;
-    property Pixel[X, Y: Integer]: TColor32 read GetPixel write SetPixel;
+    property Color: TColor read FColor write FColor;
+    property Pixel[X, Y: Integer]: TColor read GetPixel write SetPixel;
   end;
 
   TTurtleCursor = class
   type
     TPointStack = TStack<TPointF>;
   private
-    FAngle: Single;
+    FAngle: Double;
     FAntiAliased: Boolean;
     FCanvas: TTurtleCanvas;
-    FColor: TColor32;
+    FColor: TColor;
     FPosition: TPointF;
     FPositionStack: TPointStack;
     FVisible: Boolean;
@@ -100,19 +104,19 @@ type
     procedure PopPosition;
     procedure PushPosition;
 
-    procedure Go(Distance: Single = 10);
-    procedure Draw(Distance: Single = 10);
-    procedure Turn(NewAngleInDegree: Single = 90);
-    procedure MoveTo(X, Y: Single);
-    procedure LineTo(X, Y: Single);
-    procedure LookAt(X, Y: Single);
+    procedure Go(Distance: Double = 10);
+    procedure Draw(Distance: Double = 10);
+    procedure Turn(NewAngleInDegree: Double = 90);
+    procedure MoveTo(X, Y: Double);
+    procedure LineTo(X, Y: Double);
+    procedure LookAt(X, Y: Double);
 
     procedure Home(TruncToInteger: Boolean = False);
     procedure Center(TruncToInteger: Boolean = False);
 
-    property Angle: Single read FAngle write FAngle;
+    property Angle: Double read FAngle write FAngle;
     property AntiAliased: Boolean read FAntiAliased write FAntiAliased;
-    property Color: TColor32 read FColor write FColor;
+    property Color: TColor read FColor write FColor;
     property Position: TPointF read FPosition write SetPosition;
     property PositionStack: TPointStack read FPositionStack;
     property Visible: Boolean read FVisible write FVisible;
@@ -161,6 +165,7 @@ type
     dwsUnitAdvanced: TdwsUnit;
     dwsUnitBasic: TdwsUnit;
     dwsUnitInput: TdwsUnit;
+    dwsUnitShapes: TdwsUnit;
 
     procedure dwsClassesTCanvasMethodsClearEval(Info: TProgramInfo; ExtObject: TObject);
     procedure dwsClassesTCanvasMethodsGetColorEval(Info: TProgramInfo; ExtObject: TObject);
@@ -192,6 +197,7 @@ type
     procedure dwsFunctionsComposeColorHSLEval(info: TProgramInfo);
     procedure dwsFunctionsCosineEval(info: TProgramInfo);
     procedure dwsFunctionsDelayEval(info: TProgramInfo);
+    procedure dwsFunctionsDrawCircleEval(info: TProgramInfo);
     procedure dwsFunctionsDrawEval(info: TProgramInfo);
     procedure dwsFunctionsGetMousePositionEval(info: TProgramInfo);
     procedure dwsFunctionsGetMousePositionXEval(info: TProgramInfo);
@@ -204,6 +210,8 @@ type
     procedure dwsFunctionsMoveToEval(info: TProgramInfo);
     procedure dwsFunctionsPopPositionEval(info: TProgramInfo);
     procedure dwsFunctionsPushPositionEval(info: TProgramInfo);
+    procedure dwsFunctionsReadKeyEval(info: TProgramInfo);
+    procedure dwsFunctionsReadMouseButtonEval(info: TProgramInfo);
     procedure dwsFunctionsSaveToFileEval(info: TProgramInfo);
     procedure dwsFunctionsSetPixelColorEval(info: TProgramInfo);
     procedure dwsFunctionsSineEval(info: TProgramInfo);
@@ -233,8 +241,6 @@ type
     procedure dwsVariablesCursorVisibleWriteVar(info: TProgramInfo; const value: Variant);
     procedure DelphiWebScriptInclude(const scriptName: string; var scriptSource: string);
     function DelphiWebScriptNeedUnit(const unitName: string; var unitSource: string): IdwsUnit;
-    procedure dwsFunctionsReadKeyEval(info: TProgramInfo);
-    procedure dwsFunctionsReadMouseButtonEval(info: TProgramInfo);
   type
     TOnLogCallEvent = procedure(Sender: TObject; CallType: TLogCall;
       ClassAccess: Boolean = False) of object;
@@ -266,6 +272,8 @@ type
 var
   DataModuleShared: TDataModuleShared;
 
+procedure GetSinCos(const Theta: Double; Radius: Double; out Sin, Cos: Double);
+
 implementation
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
@@ -273,7 +281,57 @@ implementation
 {$R *.dfm}
 
 uses
-  System.Math, dwsXPlatform, GR32_Math, GR32_PortableNetworkGraphic;
+  System.Math, dwsXPlatform;
+
+{$IFNDEF CPUX86}
+  {$IFNDEF CPUX64}
+    {$DEFINE PUREPASCAL}
+  {$ENDIF}
+{$ENDIF}
+
+procedure GetSinCos(const Theta: Double; Radius: Double; out Sin, Cos: Double);
+{$IFDEF PUREPASCAL}
+var
+  S, C: Extended;
+begin
+  Math.SinCos(Theta, S, C);
+  Sin := S * Radius;
+  Cos := C * Radius;
+{$ELSE}
+{$IFDEF TARGET_x64}
+var
+  Temp: Double;
+{$ENDIF}
+asm
+{$IFDEF CPUX86}
+        FLD     Theta
+        FSINCOS
+        FMUL    Radius
+        FSTP    QWORD PTR [EDX] // cosine
+        FMUL    Radius
+        FSTP    QWORD PTR [EAX] // sine
+{$ENDIF}
+{$IFDEF CPUX64}
+        MOVD    Temp, Theta
+        FLD     Temp
+        MOVD    Temp, Radius
+        FSINCOS
+        FMUL    Temp
+        FSTP    [Cos]
+        FMUL    Temp
+        FSTP    [Sin]
+{$ENDIF}
+{$ENDIF}
+end;
+
+function FloatMod(x, y: Double): Double;
+begin
+  if (y = 0) then
+    Result := X
+  else
+    Result := x - y * Floor(x / y);
+end;
+
 
 { TTurtleCanvas }
 
@@ -283,20 +341,26 @@ begin
   FColor := 0;
 end;
 
-procedure TTurtleCanvas.DrawLine(AX, AY, BX, BY: Integer; Color: TColor32);
+procedure TTurtleCanvas.DrawLine(AX, AY, BX, BY: Integer; Color: TColor);
 begin
   if Assigned(FOutputGraphics) then
     FOutputGraphics.DrawLine(System.Types.Point(AX, AY),
       System.Types.Point(BX, BY), Color);
 end;
 
-procedure TTurtleCanvas.DrawLine(A, B: TPoint; Color: TColor32);
+procedure TTurtleCanvas.DrawCircle(Center: TPointF; Radius: Double;
+  Color: TColor);
+begin
+  FOutputGraphics.DrawCircle(Center, Radius, Color);
+end;
+
+procedure TTurtleCanvas.DrawLine(A, B: TPoint; Color: TColor);
 begin
   if Assigned(FOutputGraphics) then
     FOutputGraphics.DrawLine(A, B, Color);
 end;
 
-procedure TTurtleCanvas.DrawLineF(A, B: TPointF; Color: TColor32);
+procedure TTurtleCanvas.DrawLineF(A, B: TPointF; Color: TColor);
 begin
   if Assigned(FOutputGraphics) then
     FOutputGraphics.DrawLineF(A, B, Color);
@@ -309,7 +373,7 @@ begin
     Result := FOutputGraphics.Height;
 end;
 
-function TTurtleCanvas.GetPixel(X, Y: Integer): TColor32;
+function TTurtleCanvas.GetPixel(X, Y: Integer): TColor;
 begin
   Result := 0;
   if Assigned(FOutputGraphics) then
@@ -335,7 +399,7 @@ begin
     FOutputGraphics.SaveToFile(FileName);
 end;
 
-procedure TTurtleCanvas.SetPixel(X, Y: Integer; Color: TColor32);
+procedure TTurtleCanvas.SetPixel(X, Y: Integer; Color: TColor);
 begin
   if Assigned(FOutputGraphics) then
     FOutputGraphics.PixelColor[X, Y] := Color;
@@ -347,11 +411,54 @@ begin
     FOutputGraphics.Clear(FColor);
 end;
 
-procedure TTurtleCanvas.Clear(Color: TColor32);
+procedure TTurtleCanvas.Clear(Color: TColor);
 begin
   FColor := Color;
   if Assigned(FOutputGraphics) then
     FOutputGraphics.Clear(Color);
+end;
+
+function TTurtleCanvas.ComposeColor(R, G, B: Byte; A: Byte = $FF): TColor;
+begin
+  Result := 0;
+  if Assigned(FOutputGraphics) then
+    Result := FOutputGraphics.ComposeColor(R, G, B, A);
+end;
+
+function TTurtleCanvas.ComposeColorHSL(H, S, L: Double; A: Byte): TColor;
+const
+  OneOverThree = 1 / 3;
+var
+  M1, M2: Double;
+
+  function HueToColor(Hue: Double): Byte;
+  var
+    V: Double;
+  begin
+    Hue := Hue - Floor(Hue);
+    if 6 * Hue < 1 then
+      V := M1 + (M2 - M1) * Hue * 6
+    else if 2 * Hue < 1 then
+      V := M2
+    else if 3 * Hue < 2 then
+      V := M1 + (M2 - M1) * (2 * OneOverThree - Hue) * 6
+    else V := M1;
+    Result := Round($FF * V);
+  end;
+
+begin
+  if S = 0 then
+    Exit(ComposeColor(Round($FF * L), Round($FF * L), Round($FF * L)));
+
+  if L <= 0.5 then
+    M2 := L * (1 + S)
+  else
+    M2 := L + S - L * S;
+  M1 := 2 * L - M2;
+  Result := ComposeColor(
+    HueToColor(H + OneOverThree),
+    HueToColor(H),
+    HueToColor(H - OneOverThree));
 end;
 
 
@@ -363,7 +470,7 @@ begin
 
   FCanvas := TurtleCanvas;
 
-  FColor := clBlack32;
+  FColor := Integer($FF000000);
   FAngle := 0;
   FAntiAliased := True;
   FVisible := True;
@@ -378,11 +485,11 @@ begin
   inherited;
 end;
 
-procedure TTurtleCursor.Go(Distance: Single = 10);
+procedure TTurtleCursor.Go(Distance: Double = 10);
 var
-  c, s: Single;
+  c, s: Double;
 begin
-  SinCos(FAngle, Distance, s, c);
+  GetSinCos(FAngle, Distance, s, c);
   Position := PointF(FPosition.X + c, FPosition.Y + s);
 end;
 
@@ -400,12 +507,12 @@ begin
   FAngle := 0;
 end;
 
-procedure TTurtleCursor.Draw(Distance: Single);
+procedure TTurtleCursor.Draw(Distance: Double);
 var
-  c, s: Single;
+  c, s: Double;
   NewPoint: TPointF;
 begin
-  SinCos(FAngle, Distance, s, c);
+  GetSinCos(FAngle, Distance, s, c);
   NewPoint := PointF(FPosition.X + c, FPosition.Y + s);
 
   DrawLine(Position, NewPoint);
@@ -421,7 +528,7 @@ begin
     FCanvas.DrawLine(Round(A.X), Round(A.Y), Round(B.X), Round(B.Y), Color);
 end;
 
-procedure TTurtleCursor.LineTo(X, Y: Single);
+procedure TTurtleCursor.LineTo(X, Y: Double);
 var
   NewPoint: TPointF;
 begin
@@ -433,12 +540,12 @@ begin
   Position := NewPoint;
 end;
 
-procedure TTurtleCursor.LookAt(X, Y: Single);
+procedure TTurtleCursor.LookAt(X, Y: Double);
 begin
   FAngle := ArcTan2(Y - FPosition.Y, X - FPosition.X);
 end;
 
-procedure TTurtleCursor.MoveTo(X, Y: Single);
+procedure TTurtleCursor.MoveTo(X, Y: Double);
 begin
   FAngle := ArcTan2(Y - Position.Y, X - Position.X);
   Position := PointF(X, Y);
@@ -465,7 +572,7 @@ begin
   end;
 end;
 
-procedure TTurtleCursor.Turn(NewAngleInDegree: Single);
+procedure TTurtleCursor.Turn(NewAngleInDegree: Double);
 begin
   FAngle := FloatMod(FAngle - DegToRad(NewAngleInDegree), 2 * Pi);
 end;
@@ -513,22 +620,28 @@ end;
 
 function TTurtleInput.GetMousePosition(LimitToBounds: Boolean = True): TPoint;
 begin
-  Result := FInput.GetMousePosition(LimitToBounds);
+  if Assigned(FInput) then
+    Result := FInput.GetMousePosition(LimitToBounds);
 end;
 
 function TTurtleInput.ReadKey(LimitToLastKey: Boolean = True): string;
 begin
-  Result := FInput.ReadKey(LimitToLastKey);
+  if Assigned(FInput) then
+    Result := FInput.ReadKey(LimitToLastKey);
 end;
 
 function TTurtleInput.ReadMouseButton: Boolean;
 begin
-  Result := FInput.ReadMouseButton;
+  Result := False;
+  if Assigned(FInput) then
+    Result := FInput.ReadMouseButton;
 end;
 
 function TTurtleInput.ReadMouseButton(MouseButton: TMouseButton): Boolean;
 begin
-  Result := FInput.ReadMouseButton(MouseButton);
+  Result := False;
+  if Assigned(FInput) then
+    Result := FInput.ReadMouseButton(MouseButton);
 end;
 
 
@@ -559,12 +672,12 @@ procedure TDataModuleShared.dwsFunctionsComposeColorEval(
   info: TProgramInfo);
 begin
   if info.FuncSym.Params.Count = 3 then
-    info.ResultAsInteger := Color32(
+    info.ResultAsInteger := FTurtleCanvas.ComposeColor(
       Round(255 * Info.ParamAsFloat[0]),
       Round(255 * Info.ParamAsFloat[1]),
       Round(255 * Info.ParamAsFloat[2]))
   else
-    info.ResultAsInteger := Color32(
+    info.ResultAsInteger := FTurtleCanvas.ComposeColor(
       Round(255 * Info.ParamAsFloat[0]),
       Round(255 * Info.ParamAsFloat[1]),
       Round(255 * Info.ParamAsFloat[2]),
@@ -577,15 +690,15 @@ procedure TDataModuleShared.dwsFunctionsComposeColorHSLEval(
   info: TProgramInfo);
 begin
   if info.FuncSym.Params.Count = 3 then
-    info.ResultAsInteger := HSLtoRGB(
+    info.ResultAsInteger := FTurtleCanvas.ComposeColorHSL(
       Info.ParamAsFloat[0],
       Info.ParamAsFloat[1],
       Info.ParamAsFloat[2])
   else
-    info.ResultAsInteger := SetAlpha(HSLtoRGB(
+    info.ResultAsInteger := FTurtleCanvas.ComposeColorHSL(
       Info.ParamAsFloat[0],
       Info.ParamAsFloat[1],
-      Info.ParamAsFloat[2]),
+      Info.ParamAsFloat[2],
       Round(255 * Info.ParamAsFloat[3]));
 
   LogCall(lcComposeColorHSL);
@@ -847,6 +960,25 @@ begin
   ExtObject := FTextOutput;
 end;
 
+procedure TDataModuleShared.dwsFunctionsDrawCircleEval(
+  info: TProgramInfo);
+begin
+  case info.FuncSym.Params.Count of
+    1:
+      FTurtleCanvas.DrawCircle(FTurtleCursor.Position,
+        info.ParamAsFloat[0], FTurtleCursor.Color);
+    2:
+      FTurtleCanvas.DrawCircle(FTurtleCursor.Position, info.ParamAsFloat[0],
+        info.ParamAsInteger[1]);
+    3:
+      FTurtleCanvas.DrawCircle(PointF(info.ParamAsFloat[0], info.ParamAsFloat[1]),
+        info.ParamAsFloat[2], FTurtleCursor.Color);
+    4:
+      FTurtleCanvas.DrawCircle(PointF(info.ParamAsFloat[0], info.ParamAsFloat[1]),
+        info.ParamAsFloat[2], info.ParamAsInteger[3]);
+  end;
+end;
+
 procedure TDataModuleShared.dwsFunctionsReadKeyEval(
   info: TProgramInfo);
 begin
@@ -1010,7 +1142,7 @@ end;
 procedure TDataModuleShared.dwsVariablesCursorAngleWriteVar(
   info: TProgramInfo; const value: Variant);
 var
-  NewAngle: Single;
+  NewAngle: Double;
 begin
   NewAngle := FloatMod(DegToRad(-Value), 2 * Pi);
   if NewAngle <> FTurtleCursor.Angle then

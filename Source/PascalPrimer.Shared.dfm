@@ -979,4 +979,102 @@ object DataModuleShared: TDataModuleShared
     Left = 160
     Top = 72
   end
+  object dwsUnitShapes: TdwsUnit
+    Script = DelphiWebScript
+    Dependencies.Strings = (
+      'TurtleIntermediate')
+    Functions = <
+      item
+        Name = 'DrawCircle'
+        Parameters = <
+          item
+            Name = 'Radius'
+            DataType = 'Float'
+          end>
+        Overloaded = True
+        OnEval = dwsFunctionsDrawCircleEval
+      end
+      item
+        Name = 'DrawCircle'
+        Parameters = <
+          item
+            Name = 'Radius'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Color'
+            DataType = 'TColor'
+          end>
+        Overloaded = True
+        OnEval = dwsFunctionsDrawCircleEval
+      end
+      item
+        Name = 'DrawCircle'
+        Parameters = <
+          item
+            Name = 'X'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Y'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Radius'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Color'
+            DataType = 'TColor'
+          end>
+        Overloaded = True
+        OnEval = dwsFunctionsDrawCircleEval
+      end
+      item
+        Name = 'DrawCircle'
+        Parameters = <
+          item
+            Name = 'X'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Y'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Radius'
+            DataType = 'Float'
+          end>
+        Overloaded = True
+        OnEval = dwsFunctionsDrawCircleEval
+      end
+      item
+        Name = 'DrawRectangle'
+        Parameters = <
+          item
+            Name = 'Left'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Top'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Right'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Bottom'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Color'
+            DataType = 'TColor'
+          end>
+      end>
+    UnitName = 'Shapes'
+    StaticSymbols = False
+    Left = 160
+    Top = 136
+  end
 end

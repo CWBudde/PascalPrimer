@@ -21,27 +21,28 @@ uses
   PascalPrimer.Shared;
 
 type
-  TOnCompilationCompleted = procedure(Sender: TObject; CompiledProgram: IdwsProgram) of object;
-
   TOutputImage32 = class(TInterfacedObject, IOutputGraphics)
   private
     FImage32: TImage32;
     function GetHeight: Integer;
-    function GetPixelColor(X, Y: Integer): TColor32;
+    function GetPixelColor(X, Y: Integer): TColor;
     function GetWidth: Integer;
-    procedure SetPixelColor(X, Y: Integer; Value: TColor32);
+    procedure SetPixelColor(X, Y: Integer; Value: TColor);
   public
     constructor Create(Image32: TImage32);
 
-    procedure Clear(Color: TColor32);
-    procedure DrawLine(A, B: TPoint; Color: TColor32);
-    procedure DrawLineF(A, B: TPointF; Color: TColor32);
+    procedure Clear(Color: TColor);
+    function ComposeColor(R, G, B, A: Byte): TColor;
     procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
+    procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawLine(A, B: TPoint; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor);
+
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
-    property PixelColor[X, Y: Integer]: TColor32 read GetPixelColor write SetPixelColor;
+    property PixelColor[X, Y: Integer]: TColor read GetPixelColor write SetPixelColor;
   end;
 
   TOutputStrings = class(TInterfacedObject, IOutputText)
@@ -77,6 +78,11 @@ type
     property KeysPressedHistory: string read FKeysPressedHistory write FKeysPressedHistory;
   end;
 
+  TScriptExecutionThread = class(TThread)
+  protected
+    procedure Execute; override;
+  end;
+
   TFormStandalone = class(TForm)
     Image32: TImage32;
     procedure FormCreate(Sender: TObject);
@@ -88,15 +94,19 @@ type
   private
     FProgramExecution: IdwsProgramExecution;
     FCompiledProgram: IdwsProgram;
-    FCriticalSection: TCriticalSection;
+    FScriptExecutionThread: TScriptExecutionThread;
 
     FInput: TInputImage32;
     FPolygonInverter: TInvertPolygonFiller;
 
     FSourceCode: string;
+    procedure SetupScriptExecutionThread;
+    procedure KillScriptExecutionThread;
+    procedure ScriptExecutionThreadTerminated(Sender: TObject);
   public
     procedure CompileScript;
     procedure RunScript;
+    property SourceCode: string read FSourceCode;
   end;
 
 var
@@ -108,26 +118,41 @@ implementation
 
 uses
   Math, Registry, StrUtils, ShellAPI, dwsUtils, dwsXPlatform,
-  GR32_PortableNetworkGraphic, GR32_VPR, GR32_Paths, GR32_Math, GR32_Brushes;
+  GR32_PortableNetworkGraphic, GR32_VPR, GR32_Paths, GR32_Math, GR32_Brushes,
+  GR32_VectorUtils;
 
 { TOutputImage32 }
+
+function TOutputImage32.ComposeColor(R, G, B, A: Byte): TColor;
+begin
+  Result := Color32(R, G, B, A)
+end;
 
 constructor TOutputImage32.Create(Image32: TImage32);
 begin
   FImage32 := Image32;
 end;
 
-procedure TOutputImage32.Clear(Color: TColor32);
+procedure TOutputImage32.Clear(Color: TColor);
 begin
   FImage32.Bitmap.Clear(Color);
 end;
 
-procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor32);
+procedure TOutputImage32.DrawCircle(Center: TPointF; Radius: Double;
+  Color: TColor);
+var
+  Pnts: TArrayOfFloatPoint;
+begin
+  Pnts := Circle(Center.X, Center.Y, Radius);
+  PolygonFS(FImage32.Bitmap, Pnts, Color);
+end;
+
+procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor);
 begin
   FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, Color);
 end;
 
-procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor32);
+procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor);
 begin
   FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, Color);
 end;
@@ -137,7 +162,7 @@ begin
   Result := FImage32.Bitmap.Height;
 end;
 
-function TOutputImage32.GetPixelColor(X, Y: Integer): TColor32;
+function TOutputImage32.GetPixelColor(X, Y: Integer): TColor;
 begin
   Result := FImage32.Bitmap.PixelS[X, Y];
 end;
@@ -177,7 +202,7 @@ begin
     Exit;
 end;
 
-procedure TOutputImage32.SetPixelColor(X, Y: Integer; Value: TColor32);
+procedure TOutputImage32.SetPixelColor(X, Y: Integer; Value: TColor);
 begin
   FImage32.Bitmap.PixelS[X, Y] := Value;
 end;
@@ -293,15 +318,25 @@ begin
 end;
 
 
+{ TScriptExecutionThread }
+
+procedure TScriptExecutionThread.Execute;
+begin
+  inherited;
+
+  FormStandalone.RunScript;
+end;
+
+
 { TFormStandalone }
 
 procedure TFormStandalone.FormCreate(Sender: TObject);
+var
+  RS: TResourceStream;
 begin
   Image32.Bitmap.SetSize(Image32.Width, Image32.Height);
 
   FPolygonInverter := TInvertPolygonFiller.Create;
-
-  FCriticalSection := TCriticalSection.Create;
 
   FInput := TInputImage32.Create(Image32);
 
@@ -312,24 +347,47 @@ begin
   Image32.PaintStages.Add.Stage := PST_CUSTOM;
   Image32.PaintStages.Insert(1).Stage := PST_CUSTOM;
 
+  // load script from resource
+  if FindResource(hInstance, 'SCRIPT', 'PAS') <> 0 then
+  begin
+    RS := TResourceStream.Create(HInstance, 'SCRIPT', 'PAS');
+    try
+      with TStringStream.Create do
+      try
+        LoadFromStream(RS);
+        FSourceCode := DataString;
+      finally
+        Free;
+      end;
+    finally
+      RS.Free;
+    end;
+  end;
+
   // load source code
   if FileExists(ChangeFileExt(ParamStr(0), '.pas')) then
-    FSourceCode := LoadTextFromFile(ChangeFileExt(ParamStr(0), '.pas'))
-  else
+    FSourceCode := LoadTextFromFile(ChangeFileExt(ParamStr(0), '.pas'));
+
+  if FSourceCode = '' then
+  begin
+    MessageDlg('No script found!', mtError, [mbOK], 0);
     Application.Terminate;
+    Exit;
+  end;
 
   CompileScript;
 end;
 
 procedure TFormStandalone.FormDestroy(Sender: TObject);
 begin
+  KillScriptExecutionThread;
+
   // release interfaces
   FInput := nil;
   DataModuleShared.OutputGraphics := nil;
   DataModuleShared.OutputText := nil;
   DataModuleShared.Input := nil;
 
-  FreeAndNil(FCriticalSection);
   FreeAndNil(FPolygonInverter);
 end;
 
@@ -337,14 +395,38 @@ procedure TFormStandalone.FormShow(Sender: TObject);
 begin
   DataModuleShared.TurtleCursor.Home;
   DataModuleShared.TurtleCursor.Visible := False;
-
-  RunScript;
 end;
 
 procedure TFormStandalone.FormKeyPress(Sender: TObject; var Key: Char);
 begin
   // append key
   FInput.KeysPressedHistory := FInput.KeysPressedHistory + Key;
+end;
+
+procedure TFormStandalone.SetupScriptExecutionThread;
+begin
+  FScriptExecutionThread := TScriptExecutionThread.Create(True);
+  FScriptExecutionThread.OnTerminate := ScriptExecutionThreadTerminated;
+  FScriptExecutionThread.FreeOnTerminate := True;
+  FScriptExecutionThread.Start;
+end;
+
+procedure TFormStandalone.KillScriptExecutionThread;
+var
+  Thread: TThread;
+begin
+  if Assigned(FScriptExecutionThread) then
+  begin
+    FProgramExecution.Stop;
+    Thread := FScriptExecutionThread;
+    Thread.Terminate;
+//    Thread.WaitFor;
+  end;
+end;
+
+procedure TFormStandalone.ScriptExecutionThreadTerminated(Sender: TObject);
+begin
+  FScriptExecutionThread := nil;
 end;
 
 procedure TFormStandalone.CompileScript;
@@ -376,7 +458,8 @@ begin
 
   FProgramExecution := FCompiledProgram.CreateNewExecution;
   FProgramExecution.Execute;
-  Image32.Invalidate;
+  if Assigned(Image32) then
+    Image32.Invalidate;
 
   FProgramExecution := nil;
 end;
@@ -414,8 +497,10 @@ begin
   Image32.Bitmap.SetSize(Image32.Width, Image32.Height);
   DataModuleShared.TurtleCanvas.Clear;
 
-  RunScript;
+  KillScriptExecutionThread;
+  SetupScriptExecutionThread;
 end;
+
 
 initialization
   SetGamma(1);

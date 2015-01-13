@@ -1,5 +1,11 @@
 unit PascalPrimer.Main;
 
+{-$DEFINE ExportToExecutable}
+
+{$IFDEF ExportToExecutable}
+{$R 'PascalPrimer.Standalone.res' 'PascalPrimer.Standalone.rc'}
+{$ENDIF}
+
 interface
 
 uses
@@ -29,6 +35,7 @@ uses
   WebUpdate.Classes.WebUpdate,
 
   (* Custom *)
+  {$IFDEF ExportToExecutable} PascalPrimer.EmbedResources, {$ENDIF}
   PascalPrimer.Shared, PascalPrimer.Statistics;
 
 type
@@ -80,21 +87,24 @@ type
   private
     FImage32: TImage32;
     function GetHeight: Integer;
-    function GetPixelColor(X, Y: Integer): TColor32;
+    function GetPixelColor(X, Y: Integer): TColor;
     function GetWidth: Integer;
-    procedure SetPixelColor(X, Y: Integer; Value: TColor32);
+    procedure SetPixelColor(X, Y: Integer; Value: TColor);
   public
     constructor Create(Image32: TImage32);
 
-    procedure Clear(Color: TColor32);
-    procedure DrawLine(A, B: TPoint; Color: TColor32);
-    procedure DrawLineF(A, B: TPointF; Color: TColor32);
+    procedure Clear(Color: TColor);
+    function ComposeColor(R, G, B, A: Byte): TColor;
     procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
+    procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawLine(A, B: TPoint; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor);
+
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
-    property PixelColor[X, Y: Integer]: TColor32 read GetPixelColor write SetPixelColor;
+    property PixelColor[X, Y: Integer]: TColor read GetPixelColor write SetPixelColor;
   end;
 
   TOutputStrings = class(TInterfacedObject, IOutputText)
@@ -137,6 +147,8 @@ type
   public
     constructor Create(Image32: TImage32);
 
+    procedure Reset;
+
     function ReadKey(LimitToLastKey: Boolean): string;
     function ReadMouseButton: Boolean; overload;
     function ReadMouseButton(MouseButton: TMouseButton): Boolean; overload;
@@ -153,6 +165,7 @@ type
     ActionEditSelectAll: TEditSelectAll;
     ActionEditUndo: TEditUndo;
     ActionFileExit: TFileExit;
+    ActionFileExportAs: TFileSaveAs;
     ActionFileNew: TAction;
     ActionFileOpen: TFileOpen;
     ActionFileSaveScript: TAction;
@@ -192,6 +205,7 @@ type
     MenuItemEditUndo: TMenuItem;
     MenuItemFile: TMenuItem;
     MenuItemFileExit: TMenuItem;
+    MenuItemFileExportAs: TMenuItem;
     MenuItemFileNew: TMenuItem;
     MenuItemFileOpen: TMenuItem;
     MenuItemFileSave: TMenuItem;
@@ -243,6 +257,7 @@ type
     TabSheetCompiler: TTabSheet;
     TabSheetOutput: TTabSheet;
     ToolBar: TToolBar;
+    ToolButtonNew: TToolButton;
     ToolButtonCompile: TToolButton;
     ToolButtonCopy: TToolButton;
     ToolButtonCut: TToolButton;
@@ -259,7 +274,7 @@ type
     ToolButtonSeparator3: TToolButton;
     ToolButtonSeparator4: TToolButton;
     ToolButtonUndo: TToolButton;
-    ToolButton1: TToolButton;
+    ToolButtonExport: TToolButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -311,6 +326,7 @@ type
     procedure SynParametersExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure ActionFileExportAsAccept(Sender: TObject);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -374,7 +390,7 @@ implementation
 uses
   Math, Registry, StrUtils, ShellAPI, dwsUtils, dwsXPlatform,
   GR32_PortableNetworkGraphic, GR32_VPR, GR32_Paths, GR32_Math, GR32_Brushes,
-  PascalPrimer.About;
+  GR32_VectorUtils, PascalPrimer.About;
 
 const
   CWebUpdateUrl = 'http://www.savioursofsoul.de/Christian/WebUpdate/PascalPrimer/';
@@ -507,7 +523,7 @@ begin
   if not Assigned(FCompiledProgram) or FCompiledProgram.Msgs.HasErrors then
     Exit;
 
-   {$ifndef WIN64}
+   {$IFNDEF WIN64}
    if FJustInTimeCompilation then
      with TdwsJITx86.Create do
      try
@@ -516,7 +532,7 @@ begin
      finally
        Free;
      end;
-   {$endif}
+   {$ENDIF}
 
   try
     FProgramExecution := FCompiledProgram.CreateNewExecution;
@@ -560,24 +576,35 @@ end;
 
 { TOutputImage32 }
 
+function TOutputImage32.ComposeColor(R, G, B, A: Byte): TColor;
+begin
+  Result := TColor(Color32(R, G, B, A));
+end;
+
 constructor TOutputImage32.Create(Image32: TImage32);
 begin
   FImage32 := Image32;
 end;
 
-procedure TOutputImage32.Clear(Color: TColor32);
+procedure TOutputImage32.Clear(Color: TColor);
 begin
-  FImage32.Bitmap.Clear(Color);
+  FImage32.Bitmap.Clear(TColor32(Color));
 end;
 
-procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor32);
+procedure TOutputImage32.DrawCircle(Center: TPointF; Radius: Double;
+  Color: TColor);
 begin
-  FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, Color);
+  PolygonFS(FImage32.Bitmap, Circle(Center.X, Center.Y, Radius), TColor32(Color));
 end;
 
-procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor32);
+procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor);
 begin
-  FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, Color);
+  FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, TColor32(Color));
+end;
+
+procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor);
+begin
+  FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, TColor32(Color));
 end;
 
 function TOutputImage32.GetHeight: Integer;
@@ -585,7 +612,7 @@ begin
   Result := FImage32.Bitmap.Height;
 end;
 
-function TOutputImage32.GetPixelColor(X, Y: Integer): TColor32;
+function TOutputImage32.GetPixelColor(X, Y: Integer): TColor;
 begin
   Result := FImage32.Bitmap.PixelS[X, Y];
 end;
@@ -630,9 +657,9 @@ begin
   end;
 end;
 
-procedure TOutputImage32.SetPixelColor(X, Y: Integer; Value: TColor32);
+procedure TOutputImage32.SetPixelColor(X, Y: Integer; Value: TColor);
 begin
-  FImage32.Bitmap.PixelS[X, Y] := Value;
+  FImage32.Bitmap.PixelS[X, Y] := TColor32(Value);
 end;
 
 
@@ -754,6 +781,14 @@ begin
   FMouseButton[MouseButton] := False;
 end;
 
+procedure TInputImage32.Reset;
+begin
+  FKeysPressedHistory := '';
+  FMouseButton[mbLeft] := False;
+  FMouseButton[mbMiddle] := False;
+  FMouseButton[mbRight] := False;
+end;
+
 function TInputImage32.GetMousePosition(LimitToBounds: Boolean): TPoint;
 var
   Pos: TPoint;
@@ -808,6 +843,11 @@ begin
 
   TEditorFrameSynEditPlugin.Create(SynEdit);
 
+  {$IFNDEF ExportToExecutable}
+  ActionFileExportAs.Visible := False;
+  ActionFileExportAs.Enabled := False;
+  {$ENDIF}
+
   BuildBadges;
 end;
 
@@ -857,7 +897,7 @@ begin
 
   with TRegistry.Create do
   try
-    if OpenKey('Software\DWS\Interactive\', False) then
+    if OpenKey('Software\PascalPrimer\', False) then
     begin
       SynEdit.CaretX := ReadInteger('CaretX');
       SynEdit.CaretY := ReadInteger('CaretY');
@@ -896,7 +936,7 @@ begin
 
   with TRegistry.Create do
   try
-    OpenKey('Software\DWS\Interactive\', True);
+    OpenKey('Software\PascalPrimer\', True);
 
     // store compile options
     WriteBool('AutoRun', ActionScriptAutoRun.Checked);
@@ -1085,6 +1125,8 @@ end;
 
 procedure TFormMain.RunScript(JIT: Boolean = False);
 begin
+  FInput.Reset;
+
   // abort if no compiled program is available or if it has errors
   if not Assigned(FCompiledProgram) or FCompiledProgram.Msgs.HasErrors then
     Exit;
@@ -1171,7 +1213,7 @@ begin
         ActionOutputAntialiased.Checked := True;
 
         DataModuleShared.TurtleCursor.Home(True);
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Home']);
@@ -1198,7 +1240,7 @@ begin
         ActionOutputAntialiased.Checked := True;
 
         DataModuleShared.TurtleCursor.Angle := 0;
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Home']);
@@ -1222,7 +1264,7 @@ begin
         ActionOutputAntialiased.Checked := True;
 
         DataModuleShared.TurtleCursor.Angle := 0;
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Draw', 'Home']);
@@ -1244,7 +1286,7 @@ begin
         ActionOutputAntialiased.Checked := True;
 
         DataModuleShared.TurtleCursor.Angle := 0;
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Draw', 'Home', 'Turn',
@@ -1268,7 +1310,7 @@ begin
         ActionOutputCursorVisible.Checked := True;
         ActionOutputAntialiased.Checked := True;
 
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Draw', 'Home', 'Turn',
@@ -1308,7 +1350,7 @@ begin
         ActionOutputCursorVisible.Checked := True;
         ActionOutputAntialiased.Checked := True;
 
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Draw', 'Home', 'Turn',
@@ -1339,7 +1381,7 @@ begin
         ActionOutputCursorVisible.Checked := True;
         ActionOutputAntialiased.Checked := True;
 
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Go', 'Draw', 'Home', 'Turn',
@@ -1378,7 +1420,7 @@ begin
         ActionOutputCursorVisible.Visible := False;
         ActionOutputAntialiased.Checked := True;
 
-        DataModuleShared.TurtleCursor.Color := clBlack32;
+        DataModuleShared.TurtleCursor.Color := Integer(clBlack32);
 
         // update suggestion whitelist
         SetSuggestionWhitelist(['Center', 'Home', 'Go', 'Draw', 'TurnLeft',
@@ -1539,7 +1581,7 @@ var
   Canvas32: TCanvas32;
   Brush: TSolidBrush;
   Index: Integer;
-  s, c: Single;
+  s, c: Double;
   Pnts: TArrayOfFloatPoint;
 begin
   // eventually render tutorial stuff
@@ -1575,13 +1617,13 @@ begin
 
     with DataModuleShared.TurtleCursor do
     begin
-      SinCos(Angle, 6, s, c);
+      GetSinCos(Angle, 6, s, c);
       Pnts[0] := PointF(Position.X + c, Position.Y + S);
 
-      SinCos(Angle + 2.5, 6, s, c);
+      GetSinCos(Angle + 2.5, 6, s, c);
       Pnts[1] := PointF(Position.X + c, Position.Y + s);
 
-      SinCos(Angle - 2.5, 6, s, c);
+      GetSinCos(Angle - 2.5, 6, s, c);
       Pnts[2] := PointF(Position.X + c, Position.Y + s);
     end;
 
@@ -1673,6 +1715,46 @@ begin
       else
         Image32.Bitmap.SaveToFile(Dialog.Filename);
     end;
+end;
+
+procedure TFormMain.ActionFileExportAsAccept(Sender: TObject);
+{$IFDEF ExportToExecutable}
+var
+  RS : TResourceStream;
+  ResModule: TResourceModule;
+  RD : TResourceDetails;
+begin
+  Assert(Sender is TFileSaveAs);
+
+  ResModule := TPEResourceModule.Create;
+  try
+    RS := TResourceStream.Create(HInstance, 'Standalone', 'EXE');
+    try
+      ResModule.LoadFromStream(RS);
+    finally
+      FreeAndNil(RS);
+    end;
+
+    // add 'index.html' to resources
+    with TStringStream.Create do
+    try
+      WriteString(SynEdit.Text);
+      RD := TResourceDetails.CreateResourceDetails(ResModule, 0,
+        'SCRIPT', 'PAS', Size, Memory);
+      ResModule.AddResource(RD);
+    finally
+      Free;
+    end;
+
+    // now sort resources and save to file
+    ResModule.SortResources;
+    ResModule.SaveToFile(TFileSaveAs(Sender).Dialog.FileName);
+  finally
+    ResModule.Free;
+  end;
+{$ELSE}
+begin
+{$ENDIF}
 end;
 
 procedure TFormMain.ActionFileSaveScriptAsAccept(Sender: TObject);
@@ -2378,7 +2460,7 @@ procedure DrawBadge(Bitmap: TBitmap32; StarColor, BannerColor: TColor32;
   const Text: string = '');
 var
   j, Size: Integer;
-  Angle, c, s: Single;
+  Angle, c, s: Double;
   Star, Banner: TArrayOfFloatPoint;
   Brush: TSolidBrush;
   Canvas32: TCanvas32;
@@ -2394,7 +2476,7 @@ begin
   Angle := 5 * Pi / Steps;
   for j := 0 to Steps - 2 do
   begin
-    SinCos(-Angle, 2 * Size / Steps, s, c);
+    GetSinCos(-Angle, 2 * Size / Steps, s, c);
     Star[j + 1] := PointF(Star[j].X + c, Star[j].Y + s);
     Angle := Angle + ((2 * (j mod 2) - 1) * 4 + 1) * 2 * Pi / Steps;
   end;

@@ -138,7 +138,7 @@ object FormMain: TFormMain
       Gutter.Font.Name = 'Courier New'
       Gutter.Font.Style = []
       Highlighter = SynDWSSyn
-      Options = [eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEof, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabIndent, eoTabsToSpaces]
+      Options = [eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoHalfPageScroll, eoScrollPastEof, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabIndent, eoTabsToSpaces]
       SearchEngine = SynEditSearch
       TabWidth = 2
       WantTabs = True
@@ -184,7 +184,7 @@ object FormMain: TFormMain
     ParentDoubleBuffered = False
     TabOrder = 3
     Transparent = True
-    object ToolButton1: TToolButton
+    object ToolButtonNew: TToolButton
       Left = 0
       Top = 0
       Action = ActionFileNew
@@ -201,15 +201,19 @@ object FormMain: TFormMain
       Action = ActionFileSaveScript
       AutoSize = True
     end
-    object ToolButtonExit: TToolButton
+    object ToolButtonExport: TToolButton
       Left = 69
       Top = 0
+      Action = ActionFileExportAs
+    end
+    object ToolButtonExit: TToolButton
+      Left = 92
+      Top = 0
+      Action = ActionFileExit
       AutoSize = True
-      Caption = 'ToolButtonExit'
-      ImageIndex = 2
     end
     object ToolButtonSeparator1: TToolButton
-      Left = 92
+      Left = 115
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator1'
@@ -217,37 +221,37 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonCopy: TToolButton
-      Left = 100
+      Left = 123
       Top = 0
       Action = ActionEditCopy
       AutoSize = True
     end
     object ToolButtonCut: TToolButton
-      Left = 123
+      Left = 146
       Top = 0
       Action = ActionEditCut
       AutoSize = True
     end
     object ToolButtonPaste: TToolButton
-      Left = 146
+      Left = 169
       Top = 0
       Action = ActionEditPaste
       AutoSize = True
     end
     object ToolButtonSelectAll: TToolButton
-      Left = 169
+      Left = 192
       Top = 0
       Action = ActionEditSelectAll
       AutoSize = True
     end
     object ToolButtonUndo: TToolButton
-      Left = 192
+      Left = 215
       Top = 0
       Action = ActionEditUndo
       AutoSize = True
     end
     object ToolButtonSeparator2: TToolButton
-      Left = 215
+      Left = 238
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator2'
@@ -255,13 +259,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonOptions: TToolButton
-      Left = 223
+      Left = 246
       Top = 0
       Action = ActionOptions
       AutoSize = True
     end
     object ToolButtonSeparator3: TToolButton
-      Left = 246
+      Left = 269
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator3'
@@ -269,13 +273,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonFind: TToolButton
-      Left = 254
+      Left = 277
       Top = 0
       Action = ActionSearchFind
       AutoSize = True
     end
     object ToolButtonSeparator4: TToolButton
-      Left = 277
+      Left = 300
       Top = 0
       Width = 8
       Caption = 'ToolButtonSeparator4'
@@ -283,13 +287,13 @@ object FormMain: TFormMain
       Style = tbsSeparator
     end
     object ToolButtonCompile: TToolButton
-      Left = 285
+      Left = 308
       Top = 0
       Action = ActionScriptCompile
       AutoSize = True
     end
     object ToolButtonRun: TToolButton
-      Left = 308
+      Left = 331
       Top = 0
       Action = ActionScriptRun
     end
@@ -364,6 +368,9 @@ object FormMain: TFormMain
       end
       object MenuItemFileSaveAs: TMenuItem
         Action = ActionFileSaveScriptAs
+      end
+      object MenuItemFileExportAs: TMenuItem
+        Action = ActionFileExportAs
       end
       object N1: TMenuItem
         Caption = '-'
@@ -562,6 +569,15 @@ object FormMain: TFormMain
       Hint = 'Save as|Save active script'
       ImageIndex = 1
       OnAccept = ActionFileSaveScriptAsAccept
+    end
+    object ActionFileExportAs: TFileSaveAs
+      Category = 'File'
+      Caption = 'Export &as...'
+      Dialog.DefaultExt = '.exe'
+      Dialog.Filter = 'Executable (*.exe)|*.exe'
+      Hint = 'Export as|Exports the script'
+      ImageIndex = 27
+      OnAccept = ActionFileExportAsAccept
     end
     object ActionFileExit: TFileExit
       Category = 'File'
@@ -1394,16 +1410,45 @@ object FormMain: TFormMain
           FB6AAAABEFBC687E764EF00C8843C788E39C949A99EEF37A13027EBFE2DF7176
           3959FBA7776D4F783ED029FCEFF9FBDB2F6CDEA808655D98810000000049454E
           44AE426082}
+      end
+      item
+        Background = clWindow
+        Name = 'Export'
+        PngImage.Data = {
+          89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+          61000002C64944415478DA75534B485B51103D578D893EA56010CCA28A204444
+          7061047F64914040FC449B461311C4CF221105376E04772EB4488820D964A545
+          28DAC6805D48B0B8E8C2809F5D45BA16B43151C497846834CEDC6269C50E3CDE
+          BB9F3973CE9979A2B5B515A5A5A5482412E8EDED4543430332990C341A0D7A7A
+          7AB0BEBE8EBDBDBD8FF5F5F58EB3B3B3444D4DCD5B8FC7839D9D1D6D41414146
+          BC06707777879B9B1B733299DC8AC5623F6667679B0B0B0B350F0F0FB9B9B9B9
+          485555558B5EAFFF505252E213B95C0EAFC5FCFC7C7C6A6A4A9FCD6651545484
+          C7C747C92A9D4E233F3F1FABABAB493A6B161D1D1D396670757585CECE4E188D
+          46082170747484F1F171F9CD45EEEFEFC16079797972CFE7F37D6B6F6FB7094A
+          528B8B8B95EBEB6B29A1B6B69635A3ABAB0B959595209D181D1DC5C9C9090C06
+          83F48481C8A76C2814FA294C26934A1415366E6868487AB0B9B929939819D3EE
+          EBEBC3F9F9B9AC1E894440DA25C8DADA1A446363A34A9A94DBDB5B4C4C4C80D6
+          0887C3181C1C043193DA27272771717181B2B232048341094006AB8B8B8B11D1
+          D6D62601D89CE1E1610970797989DDDD5D78BD5E68B55AA452296924DFA14E40
+          A7D3617979F93B49340B8BC5A2D2A6C294A855D26196535E5E8E8585053033F6
+          81933899CD6450EA428AD62DC26AB5AA4D4D4DCAF4F4B4A4F81CF1781C2B2B2B
+          723EC6C6C624087B30333383BABABA1815F012AB90B0D96CEAC8C888E272B9FE
+          9903664493272B2F2D2D492F78EFF8F8980BB9CD66F3270615DDDDDD6A7F7FBF
+          E276BB25FDE7E0DEB3144E6419CC687F7F1FDBDBDB2CE35D4545C516DF174EA7
+          53A53629F49614F979190C44A38D68348A8D8D0D067D4FFABFF099A076A976BB
+          5D71381CF2F2DF2C5EC6C1C10102818004A069FC0D4089E98181011D0F0B07EB
+          FA5F1C1E1EC2EFF7B33C27017C7E66F08BFEAE37D5D5D57F005E0361696CEAE9
+          E9699618B808E02BEF3F01C0C755F726E5CBB10000000049454E44AE426082}
       end>
     PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
     Left = 376
-    Top = 168
+    Top = 160
     Bitmap = {}
   end
   object BadgeList: TBitmap32List
     Bitmaps = <>
     Left = 280
-    Top = 168
+    Top = 160
   end
   object ImageListSuggestion: TPngImageList
     ColorDepth = cd32Bit
@@ -1742,7 +1787,7 @@ object FormMain: TFormMain
       end>
     PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
     Left = 184
-    Top = 168
+    Top = 160
     Bitmap = {}
   end
   object dwsUnitTeacher: TdwsUnit
@@ -1759,6 +1804,6 @@ object FormMain: TFormMain
       end>
     StaticSymbols = False
     Left = 88
-    Top = 168
+    Top = 160
   end
 end

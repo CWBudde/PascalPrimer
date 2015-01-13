@@ -2,6 +2,8 @@ program Standalone;
 
 {$R *.res}
 
+{-$R 'PascalPrimer.Static.res' 'PascalPrimer.Static.rc'}
+
 uses
   FastMM4,
   Forms,
@@ -15,6 +17,7 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TDataModuleShared, DataModuleShared);
   Application.CreateForm(TFormStandalone, FormStandalone);
-  if not Application.Terminated then
+
+  if FormStandalone.SourceCode <> '' then
     Application.Run;
 end.
