@@ -1,6 +1,7 @@
 Home;
 Clear;
 CursorVisible := False;
+CursorWidth := 3;
 
 const Spread = 30;
 const Scale = 0.75;

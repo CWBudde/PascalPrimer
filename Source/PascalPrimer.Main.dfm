@@ -4,7 +4,7 @@ object FormMain: TFormMain
   ActiveControl = PageControl
   Caption = 'PascalPrimer'
   ClientHeight = 600
-  ClientWidth = 1000
+  ClientWidth = 996
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -23,7 +23,7 @@ object FormMain: TFormMain
   object StatusBar: TStatusBar
     Left = 0
     Top = 581
-    Width = 1000
+    Width = 996
     Height = 19
     Panels = <
       item
@@ -37,7 +37,7 @@ object FormMain: TFormMain
   object PanelEditOutput: TPanel
     Left = 0
     Top = 22
-    Width = 1000
+    Width = 996
     Height = 527
     Align = alClient
     BevelOuter = bvNone
@@ -50,7 +50,7 @@ object FormMain: TFormMain
     object PanelOutput: TPanel
       Left = 596
       Top = 0
-      Width = 404
+      Width = 400
       Height = 527
       Align = alClient
       BevelOuter = bvNone
@@ -58,18 +58,18 @@ object FormMain: TFormMain
       TabOrder = 0
       object SplitterVertical: TSplitter
         Left = 0
-        Top = 331
-        Width = 404
+        Top = 344
+        Width = 400
         Height = 3
         Cursor = crVSplit
         Align = alBottom
       end
       object PageControl: TPageControl
         Left = 0
-        Top = 334
-        Width = 404
-        Height = 193
-        ActivePage = TabSheetCompiler
+        Top = 347
+        Width = 400
+        Height = 180
+        ActivePage = TabSheetOutput
         Align = alBottom
         TabOrder = 1
         object TabSheetCompiler: TTabSheet
@@ -77,8 +77,8 @@ object FormMain: TFormMain
           object ListBoxCompiler: TListBox
             Left = 0
             Top = 0
-            Width = 396
-            Height = 165
+            Width = 392
+            Height = 152
             Align = alClient
             ItemHeight = 13
             PopupMenu = PopupMenuMessages
@@ -89,14 +89,14 @@ object FormMain: TFormMain
         object TabSheetOutput: TTabSheet
           Caption = '&Output'
           ImageIndex = 1
-          object ListBoxOutput: TListBox
+          object MemoOutput: TMemo
             Left = 0
             Top = 0
-            Width = 396
-            Height = 165
+            Width = 392
+            Height = 152
             Align = alClient
-            ItemHeight = 13
-            PopupMenu = PopupMenuMessages
+            MaxLength = 80
+            ReadOnly = True
             TabOrder = 0
           end
         end
@@ -104,8 +104,8 @@ object FormMain: TFormMain
       object Image32: TImage32
         Left = 0
         Top = 0
-        Width = 404
-        Height = 331
+        Width = 400
+        Height = 344
         Align = alClient
         Bitmap.DrawMode = dmBlend
         Bitmap.OuterColor = -2830136
@@ -152,7 +152,7 @@ object FormMain: TFormMain
   object ScrollBox: TScrollBox
     Left = 0
     Top = 549
-    Width = 1000
+    Width = 996
     Height = 32
     VertScrollBar.Visible = False
     Align = alBottom
@@ -173,7 +173,7 @@ object FormMain: TFormMain
   object ToolBar: TToolBar
     Left = 0
     Top = 0
-    Width = 1000
+    Width = 996
     Height = 22
     AutoSize = True
     DoubleBuffered = True
@@ -359,6 +359,14 @@ object FormMain: TFormMain
       end
       object MenuItemFileOpen: TMenuItem
         Action = ActionFileOpen
+      end
+      object MenuItemRecent: TMenuItem
+        Caption = 'Recent'
+        Visible = False
+      end
+      object MenuItemExamples: TMenuItem
+        Caption = 'Examples'
+        Visible = False
       end
       object N8: TMenuItem
         Caption = '-'
@@ -1794,6 +1802,24 @@ object FormMain: TFormMain
     Dependencies.Strings = (
       'TurtleBasic'
       'TurtleIntermediate')
+    Enumerations = <
+      item
+        Name = 'TToolbarItems'
+        Elements = <
+          item
+            Name = 'tiFile'
+          end
+          item
+            Name = 'tiEdit'
+          end
+          item
+            Name = 'tiSearch'
+          end
+          item
+            Name = 'tiScript'
+          end>
+        Style = enumFlags
+      end>
     UnitName = 'Teacher'
     Variables = <
       item
@@ -1801,6 +1827,18 @@ object FormMain: TFormMain
         DataType = 'string'
         OnReadVar = dwsUnitTeacherVariablesTutorialTextReadVar
         OnWriteVar = dwsUnitTeacherVariablesTutorialTextWriteVar
+      end
+      item
+        Name = 'ExamplesVisible'
+        DataType = 'Boolean'
+        OnReadVar = dwsUnitTeacherVariablesExamplesVisibleReadVar
+        OnWriteVar = dwsUnitTeacherVariablesExamplesVisibleWriteVar
+      end
+      item
+        Name = 'ToolbarVisible'
+        DataType = 'Boolean'
+        OnReadVar = dwsUnitTeacherVariablesToolbarVisibleReadVar
+        OnWriteVar = dwsUnitTeacherVariablesToolbarVisibleWriteVar
       end>
     StaticSymbols = False
     Left = 88

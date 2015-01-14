@@ -1,6 +1,6 @@
 unit PascalPrimer.Main;
 
-{-$DEFINE ExportToExecutable}
+{$DEFINE ExportToExecutable}
 
 {$IFDEF ExportToExecutable}
 {$R 'PascalPrimer.Standalone.res' 'PascalPrimer.Standalone.rc'}
@@ -17,6 +17,7 @@ uses
 
   (* GR32 *)
   GR32, GR32_Image, GR32_Layers, GR32_Transforms, GR32_PNG, GR32_Polygons,
+  GR32_Paths,
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
@@ -39,6 +40,12 @@ uses
   PascalPrimer.Shared, PascalPrimer.Statistics;
 
 type
+  TEditorFrameSynEditPlugin = class(TSynEditPlugin)
+  protected
+    procedure AfterPaint(ACanvas: TCanvas; const AClip: TRect;
+      FirstLine, LastLine: Integer); override;
+  end;
+
   TOnCompilationCompleted = procedure(Sender: TObject; CompiledProgram: IdwsProgram) of object;
 
   TBackgroundCompilationThread = class(TThread)
@@ -98,9 +105,10 @@ type
     procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
-    procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawCircle(Center: TPointF; Radius: Float; Color: TColor);
+    procedure DrawRectangle(Left, Top, Right, Bottom: Float; Color: TColor);
     procedure DrawLine(A, B: TPoint; Color: TColor);
-    procedure DrawLineF(A, B: TPointF; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor; StrokeWidth: Float = 1.0);
 
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
@@ -122,13 +130,13 @@ type
     property Text: string read GetText write SetText;
   end;
 
-  TOutputListBox = class(TInterfacedObject, IOutputText)
+  TOutputMemo = class(TInterfacedObject, IOutputText)
   private
-    FListBox: TListBox;
+    FMemo: TMemo;
     function GetText: string;
     procedure SetText(const Value: string);
   public
-    constructor Create(ListBox: TListBox);
+    constructor Create(Memo: TMemo);
 
     procedure AddLine(Text: string);
     procedure AddString(Text: string);
@@ -193,7 +201,6 @@ type
     ImageListActions: TPngImageList;
     ImageListSuggestion: TPngImageList;
     ListBoxCompiler: TListBox;
-    ListBoxOutput: TListBox;
     MainMenu: TMainMenu;
     MenuItemCursorVisible: TMenuItem;
     MenuItemEdit: TMenuItem;
@@ -275,10 +282,15 @@ type
     ToolButtonSeparator4: TToolButton;
     ToolButtonUndo: TToolButton;
     ToolButtonExport: TToolButton;
+    MemoOutput: TMemo;
+    MenuItemRecent: TMenuItem;
+    MenuItemExamples: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure ActionFileExportAsAccept(Sender: TObject);
     procedure ActionFileNewExecute(Sender: TObject);
     procedure ActionFileOpenAccept(Sender: TObject);
     procedure ActionFileOpenBeforeExecute(Sender: TObject);
@@ -311,7 +323,7 @@ type
     procedure Image32Resize(Sender: TObject);
     procedure ListBoxCompilerClick(Sender: TObject);
     procedure MenuSaveMessagesAsClick(Sender: TObject);
-    procedure MnuScriptExitClick(Sender: TObject);
+    procedure MenuItemExamplesClicked(Sender: TObject);
     procedure SynCodeSuggestionsClose(Sender: TObject);
     procedure SynCodeSuggestionsExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
@@ -325,8 +337,14 @@ type
     procedure SynEditStatusChange(Sender: TObject; Changes: TSynStatusChanges);
     procedure SynParametersExecute(Kind: SynCompletionType; Sender: TObject;
       var CurrentInput: string; var x, y: Integer; var CanExecute: Boolean);
-    procedure FormKeyPress(Sender: TObject; var Key: Char);
-    procedure ActionFileExportAsAccept(Sender: TObject);
+    procedure dwsUnitTeacherVariablesExamplesVisibleReadVar(info: TProgramInfo;
+      var value: Variant);
+    procedure dwsUnitTeacherVariablesExamplesVisibleWriteVar(info: TProgramInfo;
+      const value: Variant);
+    procedure dwsUnitTeacherVariablesToolbarVisibleReadVar(info: TProgramInfo;
+      var value: Variant);
+    procedure dwsUnitTeacherVariablesToolbarVisibleWriteVar(info: TProgramInfo;
+      const value: Variant);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -341,7 +359,7 @@ type
     FModified: Boolean;
     FCurrentFileName: TFileName;
     FOriginalCaption: string;
-
+    FSearchHighlighter: TEditorFrameSynEditPlugin;
     FTutorialIndex: Integer;
     FLastArea: TRect;
     FTargetAreas: array of TTargetArea;
@@ -363,10 +381,14 @@ type
     procedure PrepareTutorial(Index: Integer);
     procedure LogCallHandler(Sender: TObject; CallType: TLogCall; ClassAccess: Boolean = False);
 
+    procedure LoadScript(FileName: TFileName);
+    procedure SaveScript(FileName: TFileName);
+
     procedure ResetSuggestionWhitelist;
     procedure SetSuggestionWhitelist(Items: array of string);
     procedure SetCurrentFileName(const Value: TFileName);
     procedure SetModified(const Value: Boolean);
+    procedure EnumerateExamples;
   protected
     procedure BuildBadges;
     procedure UpdateBadges;
@@ -389,20 +411,13 @@ implementation
 
 uses
   Math, Registry, StrUtils, ShellAPI, dwsUtils, dwsXPlatform,
-  GR32_PortableNetworkGraphic, GR32_VPR, GR32_Paths, GR32_Math, GR32_Brushes,
+  GR32_PortableNetworkGraphic, GR32_VPR, GR32_Math, GR32_Brushes,
   GR32_VectorUtils, PascalPrimer.About;
 
 const
   CWebUpdateUrl = 'http://www.savioursofsoul.de/Christian/WebUpdate/PascalPrimer/';
 
 { TEditorFrameSynEditPlugin }
-
-type
-  TEditorFrameSynEditPlugin = class(TSynEditPlugin)
-  protected
-    procedure AfterPaint(ACanvas: TCanvas; const AClip: TRect;
-      FirstLine, LastLine: Integer); override;
-  end;
 
 procedure TEditorFrameSynEditPlugin.AfterPaint(ACanvas: TCanvas;
   const AClip: TRect; FirstLine, LastLine: Integer);
@@ -550,7 +565,8 @@ begin
   begin
     if Success then
     begin
-      FormMain.ListBoxOutput.Items.Add(FProgramExecution.Result.ToString);
+      if FProgramExecution.Result.ToString <> '' then
+        FormMain.MemoOutput.Lines.Add(FProgramExecution.Result.ToString);
       FormMain.StatusBar.Panels[1].Text := 'Executed';
     end
     else
@@ -576,11 +592,6 @@ end;
 
 { TOutputImage32 }
 
-function TOutputImage32.ComposeColor(R, G, B, A: Byte): TColor;
-begin
-  Result := TColor(Color32(R, G, B, A));
-end;
-
 constructor TOutputImage32.Create(Image32: TImage32);
 begin
   FImage32 := Image32;
@@ -591,7 +602,12 @@ begin
   FImage32.Bitmap.Clear(TColor32(Color));
 end;
 
-procedure TOutputImage32.DrawCircle(Center: TPointF; Radius: Double;
+function TOutputImage32.ComposeColor(R, G, B, A: Byte): TColor;
+begin
+  Result := TColor(Color32(R, G, B, A));
+end;
+
+procedure TOutputImage32.DrawCircle(Center: TPointF; Radius: Float;
   Color: TColor);
 begin
   PolygonFS(FImage32.Bitmap, Circle(Center.X, Center.Y, Radius), TColor32(Color));
@@ -599,12 +615,32 @@ end;
 
 procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor);
 begin
-  FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, TColor32(Color));
+  FImage32.Bitmap.LineS(A.X, A.Y, B.X, B.Y, TColor32(Color));
 end;
 
-procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor);
+procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor;
+  StrokeWidth: Float);
+var
+  Pnts: TArrayOfFloatPoint;
 begin
-  FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, TColor32(Color));
+  if StrokeWidth = 1.0 then
+    FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, TColor32(Color))
+  else
+  begin
+    // add current point pair
+    SetLength(Pnts, 2);
+    Pnts[0] := A;
+    Pnts[1] := B;
+
+    PolylineFS(FImage32.Bitmap, Pnts, TColor32(Color), False,
+      StrokeWidth, jsRound, esRound);
+  end;
+end;
+
+procedure TOutputImage32.DrawRectangle(Left, Top, Right, Bottom: Float;
+  Color: TColor);
+begin
+  PolygonFS(FImage32.Bitmap, Rectangle(FloatRect(Left, Top, Right, Bottom)), TColor32(Color));
 end;
 
 function TOutputImage32.GetHeight: Integer;
@@ -697,36 +733,36 @@ begin
 end;
 
 
-{ TOutputListBox }
+{ TOutputMemo }
 
-constructor TOutputListBox.Create(ListBox: TListBox);
+constructor TOutputMemo.Create(Memo: TMemo);
 begin
-  FListBox := ListBox;
+  FMemo := Memo;
 end;
 
-procedure TOutputListBox.AddLine(Text: string);
+procedure TOutputMemo.AddLine(Text: string);
 begin
-  FListBox.Items.Add(Text);
+  FMemo.Text := FMemo.Text + Text + #13#10;
 end;
 
-procedure TOutputListBox.AddString(Text: string);
+procedure TOutputMemo.AddString(Text: string);
 begin
-  FListBox.Items.Add(Text);
+  FMemo.Text := FMemo.Text + Text;
 end;
 
-procedure TOutputListBox.Clear;
+procedure TOutputMemo.Clear;
 begin
-  FListBox.Items.Clear;
+  FMemo.Clear;
 end;
 
-function TOutputListBox.GetText: string;
+function TOutputMemo.GetText: string;
 begin
-  Result := FListBox.Items.Text;
+  Result := FMemo.Text;
 end;
 
-procedure TOutputListBox.SetText(const Value: string);
+procedure TOutputMemo.SetText(const Value: string);
 begin
-  FListBox.Items.Text := Value;
+  FMemo.Text := Value;
 end;
 
 
@@ -832,7 +868,7 @@ begin
   FInput := TInputImage32.Create(Image32);
 
   DataModuleShared.OutputGraphics := TOutputImage32.Create(Image32);
-  DataModuleShared.OutputText := TOutputListBox.Create(ListBoxOutput);
+  DataModuleShared.OutputText := TOutputMemo.Create(MemoOutput);
   DataModuleShared.Input := FInput;
   DataModuleShared.OnLogCall := LogCallHandler;
 
@@ -841,7 +877,7 @@ begin
   Image32.PaintStages.Add.Stage := PST_CUSTOM;
   Image32.PaintStages.Insert(1).Stage := PST_CUSTOM;
 
-  TEditorFrameSynEditPlugin.Create(SynEdit);
+  FSearchHighlighter := TEditorFrameSynEditPlugin.Create(SynEdit);
 
   {$IFNDEF ExportToExecutable}
   ActionFileExportAs.Visible := False;
@@ -849,6 +885,8 @@ begin
   {$ENDIF}
 
   BuildBadges;
+
+  EnumerateExamples;
 end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
@@ -983,6 +1021,30 @@ begin
   finally
     Free;
   end;
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesExamplesVisibleReadVar(
+  info: TProgramInfo; var value: Variant);
+begin
+  value := MenuItemExamples.Visible;
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesExamplesVisibleWriteVar(
+  info: TProgramInfo; const value: Variant);
+begin
+  MenuItemExamples.Visible := value;
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesToolbarVisibleReadVar(
+  info: TProgramInfo; var value: Variant);
+begin
+  value := ToolBar.Visible;
+end;
+
+procedure TFormMain.dwsUnitTeacherVariablesToolbarVisibleWriteVar(
+  info: TProgramInfo; const value: Variant);
+begin
+  ToolBar.Visible := value;
 end;
 
 procedure TFormMain.dwsUnitTeacherVariablesTutorialTextReadVar(
@@ -1149,15 +1211,10 @@ begin
   try
     Filter := 'Text (*.txt)|*.txt';
     if Execute then
-      ListBoxOutput.Items.SaveToFile(FileName);
+      MemoOutput.Lines.SaveToFile(FileName);
   finally
     Free;
   end;
-end;
-
-procedure TFormMain.MnuScriptExitClick(Sender: TObject);
-begin
-  Close;
 end;
 
 procedure TFormMain.PrepareTutorial(Index: Integer);
@@ -1204,6 +1261,15 @@ begin
   // store last
   if Length(FTargetAreas) > 0 then
     FLastArea := FTargetAreas[Length(FTargetAreas) - 1].Rect;
+
+  // deactivate slow draw (only enable for certain tutorials
+(*
+  if FTutorialIndex in [0 .. 6] then
+  begin
+    DataModuleShared.TurtleCursor.SlowDraw := True;
+    DataModuleShared.TurtleCursor.StrokeWidth := 2;
+  end;
+*)
 
   case Index of
     0:
@@ -1635,7 +1701,7 @@ end;
 procedure TFormMain.Image32Resize(Sender: TObject);
 begin
   Image32.Bitmap.SetSize(Image32.Width, Image32.Height);
-  DataModuleShared.TurtleCanvas.Clear;
+  DataModuleShared.TurtleCanvas.Clear(SetAlpha(Color32(Image32.Color), 0));
 
   if ActionScriptAutoRun.Checked then
     RunScript;
@@ -1685,13 +1751,14 @@ begin
 
   CurrentFileName := '';
   SynEdit.Text := '';
+  SynEdit.Modified := False;
+  UpdateCaption;
+  FBackgroundCompilationThread.ScheduleCompilation;
 end;
 
 procedure TFormMain.ActionFileOpenAccept(Sender: TObject);
 begin
-  SynEdit.Lines.LoadFromFile(ActionFileOpen.Dialog.Filename);
-  CurrentFileName := ActionFileOpen.Dialog.Filename;
-  FBackgroundCompilationThread.ScheduleCompilation;
+  LoadScript(ActionFileOpen.Dialog.Filename);
 end;
 
 procedure TFormMain.ActionFileOpenBeforeExecute(Sender: TObject);
@@ -1759,9 +1826,7 @@ end;
 
 procedure TFormMain.ActionFileSaveScriptAsAccept(Sender: TObject);
 begin
-  SynEdit.Lines.SaveToFile(ActionFileSaveScriptAs.Dialog.Filename);
-  CurrentFileName := ActionFileSaveScriptAs.Dialog.Filename;
-  Modified := False;
+  SaveScript(ActionFileSaveScriptAs.Dialog.Filename);
 end;
 
 procedure TFormMain.ActionFileSaveScriptExecute(Sender: TObject);
@@ -1910,6 +1975,20 @@ begin
     for Index := Low(FTargetAreas) to High(FTargetAreas) do
       with FTargetAreas[Index] do
         Passed := PtInRect(Rect, DataModuleShared.TurtleCursor.Position);
+end;
+
+procedure TFormMain.LoadScript(FileName: TFileName);
+begin
+  SynEdit.Lines.LoadFromFile(FileName);
+  CurrentFileName := FileName;
+  FBackgroundCompilationThread.ScheduleCompilation;
+end;
+
+procedure TFormMain.SaveScript(FileName: TFileName);
+begin
+  SynEdit.Lines.SaveToFile(Filename);
+  CurrentFileName := Filename;
+  Modified := False;
 end;
 
 procedure TFormMain.SetAchievementLevel(Item: TAchievements;
@@ -2557,6 +2636,40 @@ begin
   end;
 end;
 
+procedure TFormMain.EnumerateExamples;
+var
+  StringList: TStringList;
+  FileName: string;
+  MenuItem: TMenuItem;
+begin
+  StringList := TStringList.Create;
+  try
+    CollectFiles(ExtractFilePath(ParamStr(0)) + '\Examples', '*.pas', StringList);
+    for FileName in StringList do
+    begin
+      MenuItem := TMenuItem.Create(MenuItemExamples);
+      MenuItem.Caption := ChangeFileExt(ExtractFileName(FileName), '');
+      MenuItem.OnClick := MenuItemExamplesClicked;
+      MenuItemExamples.Add(MenuItem);
+    end;
+    MenuItemExamples.Visible := MenuItemExamples.Count > 0;
+  finally
+    StringList.Free;
+  end;
+end;
+
+procedure TFormMain.MenuItemExamplesClicked(Sender: TObject);
+var
+  FileName: TFileName;
+begin
+  Assert(Sender is TMenuItem);
+  FileName := TMenuItem(Sender).Caption + '.pas';
+  FileName := ReplaceStr(FileName, '&', '');
+  FileName := ExtractFilePath(ParamStr(0)) + '\Examples\' + FileName;
+
+  if FileExists(FileName) then
+    LoadScript(FileName);
+end;
 
 initialization
   SetGamma(1);

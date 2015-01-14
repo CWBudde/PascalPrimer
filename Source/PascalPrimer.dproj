@@ -161,6 +161,10 @@
 			</DCCReference>
 			<DCCReference Include="PascalPrimer.Statistics.pas"/>
 			<DCCReference Include="PascalPrimer.EmbedResources.pas"/>
+			<DCCReference Include="PascalPrimer.Preferences.pas">
+				<Form>FormPreferences</Form>
+				<FormType>dfm</FormType>
+			</DCCReference>
 			<RcCompile Include="PascalPrimer.Standalone.rc">
 				<Form>PascalPrimer.Standalone.res</Form>
 			</RcCompile>

@@ -1,15 +1,10 @@
-Clear(0);
+uses
+  TextUnit;
+
+Clear;
 Home;
 
-(*
-for var j := 0 to 420 do
-begin
-  CursorColor := ComposeColorHSL(j / 200, 1, 0.5);  
-  Draw(0.5 * (1 + Power(j, 0.9) + 0.1 * j));
-  TurnLeft(61);
-  Delay(1);
-end;  
-*)
+CursorWidth := 3;
 
 const Steps : Integer = 24;
 var Toggle : Integer = 0; 
@@ -26,24 +21,31 @@ begin
   else  
     Turn(4 * 360 / Steps);
   Toggle := 1 - Toggle;
-  Delay(1);
 end;  
 
-  Turn(360 / Steps);
-  Go(400 / Steps);
-  Turn(-3 * 360 / Steps);
-  Go(400 / Steps);
-  CursorAngle := -90;
-  Draw(50);
-  LineTo(0.5 * ClientWidth, 0.5 * ClientHeight + 25);
+Turn(360 / Steps);
+Go(400 / Steps);
+Turn(-3 * 360 / Steps);
+Go(400 / Steps);
+CursorAngle := -90;
+Draw(50);
+LineTo(0.5 * ClientWidth, 0.5 * ClientHeight + 25);
 
-  Home;
-  Turn(1.5 * 360 / Steps);
+Home;
+Turn(1.5 * 360 / Steps);
 
-  Turn(-360 / Steps);
-  Go(-400 / Steps);
-  Turn(-3 * 360 / Steps);
-  Go(-400 / Steps);
-  CursorAngle := -90;
-  Draw(50);
-  LineTo(0.5 * ClientWidth, 0.5 * ClientHeight + 25);
+Turn(-360 / Steps);
+Go(-400 / Steps);
+Turn(-3 * 360 / Steps);
+Go(-400 / Steps);
+CursorAngle := -90;
+Draw(50);
+LineTo(0.5 * ClientWidth, 0.5 * ClientHeight + 25);
+
+Home;
+Turn;
+Go(50);
+TurnRight;
+Go(-32);
+CursorWidth := 2;
+DrawText('Winner', 16);

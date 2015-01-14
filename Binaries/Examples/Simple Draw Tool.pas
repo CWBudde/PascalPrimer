@@ -15,7 +15,7 @@ repeat
     Exit;
 
   // get a random color
-  CursorColor := $FF shl 24 + RandomInt($FFFFFF);
+  CursorColor := ComposeColor(Random, Random, Random);
   
   repeat  
     Pos := GetMousePosition;

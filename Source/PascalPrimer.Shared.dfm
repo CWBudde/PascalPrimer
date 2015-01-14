@@ -691,6 +691,12 @@ object DataModuleShared: TDataModuleShared
         DataType = 'Float'
         OnReadVar = dwsVariablesCursorPositionYReadVar
         OnWriteVar = dwsVariablesCursorPositionYWriteVar
+      end
+      item
+        Name = 'CursorWidth'
+        DataType = 'Float'
+        OnReadVar = dwsUnitIntermediateVariablesCursorWidthReadVar
+        OnWriteVar = dwsUnitIntermediateVariablesCursorWidthWriteVar
       end>
     StaticSymbols = False
     Left = 72
@@ -1071,6 +1077,29 @@ object DataModuleShared: TDataModuleShared
             Name = 'Color'
             DataType = 'TColor'
           end>
+        Overloaded = True
+        OnEval = dwsUnitShapesFunctionsDrawRectangleEval
+      end
+      item
+        Name = 'DrawRectangle'
+        Parameters = <
+          item
+            Name = 'Left'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Top'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Right'
+            DataType = 'Float'
+          end
+          item
+            Name = 'Bottom'
+            DataType = 'Float'
+          end>
+        Overloaded = True
       end>
     UnitName = 'Shapes'
     StaticSymbols = False

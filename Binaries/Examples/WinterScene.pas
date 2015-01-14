@@ -1,7 +1,7 @@
 Clear(clBlack);
 Home;
 
-procedure DrawCircle(Size: Float = 100; Steps: Integer = 36);
+procedure DrawOutlineCircle(Size: Float = 100; Steps: Integer = 36);
 begin
   var Counter: Integer = Steps;
   repeat
@@ -15,32 +15,32 @@ end;
 procedure DrawSnowMan(Size: Integer = 80);
 begin
   CursorColor := clWhite;
-  DrawCircle(Size);
+  DrawOutlineCircle(Size);
 
   TurnLeft;
   Go(Size);
   TurnRight;
-  DrawCircle(0.75 * Size);
+  DrawOutlineCircle(0.75 * Size);
 
   TurnLeft;
   Go(0.75 * Size);
   TurnRight;
-  DrawCircle(0.5 * Size);
+  DrawOutlineCircle(0.5 * Size);
 
   TurnLeft;
   Go(0.2 * Size);
   TurnRight;
   CursorColor := ComposeColor(1, 0.5, 0);
-  DrawCircle(0.04 * Size);
+  DrawOutlineCircle(0.04 * Size);
 
   CursorColor := clBlue;
   Go(0.1 * Size);
   TurnLeft;
   Go(0.1 * Size);
   TurnRight;
-  DrawCircle(0.04 * Size);
+  DrawOutlineCircle(0.04 * Size);
   Go(-0.2 * Size);
-  DrawCircle(0.04 * Size);
+  DrawOutlineCircle(0.04 * Size);
 
   CursorColor := clWhite;
   TurnRight;

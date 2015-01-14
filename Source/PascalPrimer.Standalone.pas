@@ -37,8 +37,9 @@ type
     procedure SaveToFile(FileName: TFileName);
 
     procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
+    procedure DrawRectangle(Left, Top, Right, Bottom: Double; Color: TColor);
     procedure DrawLine(A, B: TPoint; Color: TColor);
-    procedure DrawLineF(A, B: TPointF; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor; StrokeWidth: Float);
 
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
@@ -140,11 +141,8 @@ end;
 
 procedure TOutputImage32.DrawCircle(Center: TPointF; Radius: Double;
   Color: TColor);
-var
-  Pnts: TArrayOfFloatPoint;
 begin
-  Pnts := Circle(Center.X, Center.Y, Radius);
-  PolygonFS(FImage32.Bitmap, Pnts, Color);
+  PolygonFS(FImage32.Bitmap, Circle(Center.X, Center.Y, Radius), Color);
 end;
 
 procedure TOutputImage32.DrawLine(A, B: TPoint; Color: TColor);
@@ -152,9 +150,27 @@ begin
   FImage32.Bitmap.LineTS(A.X, A.Y, B.X, B.Y, Color);
 end;
 
-procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor);
+procedure TOutputImage32.DrawLineF(A, B: TPointF; Color: TColor;
+  StrokeWidth: Float);
+var
+  Pnts: TArrayOfFloatPoint;
 begin
-  FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, Color);
+  if StrokeWidth = 1.0 then
+    FImage32.Bitmap.LineFS(A.X, A.Y, B.X, B.Y, Color)
+  else
+  begin
+    SetLength(Pnts, 2);
+    Pnts[0] := A;
+    Pnts[1] := B;
+    PolylineFS(FImage32.Bitmap, Pnts, Color, False, StrokeWidth, jsRound,
+      esRound);
+  end;
+end;
+
+procedure TOutputImage32.DrawRectangle(Left, Top, Right, Bottom: Double;
+  Color: TColor);
+begin
+  PolygonFS(FImage32.Bitmap, Rectangle(FloatRect(Left, Top, Right, Bottom)), Color);
 end;
 
 function TOutputImage32.GetHeight: Integer;
@@ -367,6 +383,8 @@ begin
   // load source code
   if FileExists(ChangeFileExt(ParamStr(0), '.pas')) then
     FSourceCode := LoadTextFromFile(ChangeFileExt(ParamStr(0), '.pas'));
+
+  Caption := ChangeFileExt(ExtractFileName(ParamStr(0)), '');
 
   if FSourceCode = '' then
   begin
