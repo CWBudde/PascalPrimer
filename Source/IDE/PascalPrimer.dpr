@@ -9,7 +9,7 @@ uses
   Vcl.Styles,
   PascalPrimer.Main in 'PascalPrimer.Main.pas' {FormMain},
   PascalPrimer.About in 'PascalPrimer.About.pas' {FormAbout},
-  PascalPrimer.Shared in 'PascalPrimer.Shared.pas' {DataModuleShared: TDataModule},
+  PascalPrimer.Shared in '..\PascalPrimer.Shared.pas' {DataModuleShared: TDataModule},
   PascalPrimer.Statistics in 'PascalPrimer.Statistics.pas',
   PascalPrimer.EmbedResources in 'PascalPrimer.EmbedResources.pas',
   PascalPrimer.Preferences in 'PascalPrimer.Preferences.pas' {FormPreferences};
