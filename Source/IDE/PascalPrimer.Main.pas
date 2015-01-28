@@ -658,12 +658,22 @@ begin
   Result := FImage32.Bitmap.Width;
 end;
 
+type
+  TImage32Access = class (TImage32);
+
 procedure TOutputImage32.Invalidate(WaitForRefresh: Boolean);
 begin
+  // disable update lock
+  while TImage32Access(FImage32).UpdateCount > 0 do
+    FImage32.EndUpdate;
+
   if WaitForRefresh then
     FImage32.Refresh
   else
     FImage32.Invalidate;
+
+  // enable update lock
+  FImage32.BeginUpdate;
 end;
 
 procedure TOutputImage32.SaveToFile(FileName: TFileName);
