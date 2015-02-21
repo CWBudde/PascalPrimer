@@ -37,7 +37,7 @@ uses
 
   (* Custom *)
   {$IFDEF ExportToExecutable} PascalPrimer.EmbedResources, {$ENDIF}
-  PascalPrimer.Shared, PascalPrimer.Statistics;
+  PascalPrimer.Shared, PascalPrimer.Statistics, VirtualTrees;
 
 type
   TEditorFrameSynEditPlugin = class(TSynEditPlugin)
@@ -78,6 +78,12 @@ type
     property Output: string read GetOutput;
     property OnExecutionDone: TNotifyEvent read FOnExecutionDone write FOnExecutionDone;
   end;
+
+  TCompilerMessage = record
+    Text: string;
+    &Message: TdwsMessage;
+  end;
+  PCompilerMessage = ^TCompilerMessage;
 
   TTargetArea = record
     Rect: TRect;
@@ -200,7 +206,6 @@ type
     Image32: TImage32;
     ImageListActions: TPngImageList;
     ImageListSuggestion: TPngImageList;
-    ListBoxCompiler: TListBox;
     MainMenu: TMainMenu;
     MenuItemCursorVisible: TMenuItem;
     MenuItemEdit: TMenuItem;
@@ -285,6 +290,8 @@ type
     MemoOutput: TMemo;
     MenuItemRecent: TMenuItem;
     MenuItemExamples: TMenuItem;
+    TreeCompiler: TVirtualStringTree;
+    ImageListMessages: TPngImageList;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -321,7 +328,6 @@ type
       const value: Variant);
     procedure Image32PaintStage(Sender: TObject; Buffer: TBitmap32; StageNum: Cardinal);
     procedure Image32Resize(Sender: TObject);
-    procedure ListBoxCompilerClick(Sender: TObject);
     procedure MenuSaveMessagesAsClick(Sender: TObject);
     procedure MenuItemExamplesClicked(Sender: TObject);
     procedure SynCodeSuggestionsClose(Sender: TObject);
@@ -345,6 +351,14 @@ type
       var value: Variant);
     procedure dwsUnitTeacherVariablesToolbarVisibleWriteVar(info: TProgramInfo;
       const value: Variant);
+    procedure TreeCompilerGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure TreeCompilerDblClick(Sender: TObject);
+    procedure TreeCompilerFreeNode(Sender: TBaseVirtualTree;
+      Node: PVirtualNode);
+    procedure TreeCompilerGetImageIndex(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: Boolean; var ImageIndex: Integer);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -861,6 +875,8 @@ procedure TFormMain.FormCreate(Sender: TObject);
 begin
   Image32.Bitmap.SetSize(Image32.Width, Image32.Height);
 
+  TreeCompiler.NodeDataSize := SizeOf(TCompilerMessage);
+
   FStatistics := TStatistics.Create;
 
   FPolygonInverter := TInvertPolygonFiller.Create;
@@ -1073,17 +1089,28 @@ procedure TFormMain.CompilationCompletedHandler(Sender: TObject;
   CompiledProgram: IdwsProgram);
 var
   Index: Integer;
+  Node: PVirtualNode;
+  NodeData: PCompilerMessage;
 begin
   StatusBar.Panels[1].Text := 'Compiled';
 
   FCompiledProgram := CompiledProgram;
 
-  ListBoxCompiler.Items.Clear;
-  for Index := 0 to FCompiledProgram.Msgs.Count - 1 do
-    ListBoxCompiler.Items.AddObject(FCompiledProgram.Msgs[Index].AsInfo,
-      FCompiledProgram.Msgs[Index]);
+  TreeCompiler.BeginUpdate;
+  try
+    TreeCompiler.Clear;
+    for Index := 0 to FCompiledProgram.Msgs.Count - 1 do
+    begin
+      Node := TreeCompiler.AddChild(TreeCompiler.RootNode);
+      NodeData := TreeCompiler.GetNodeData(Node);
+      NodeData.Text := FCompiledProgram.Msgs[Index].AsInfo;
+      NodeData.Message := FCompiledProgram.Msgs[Index];
+     end;
+  finally
+    TreeCompiler.EndUpdate;
+  end;
 
-  if ListBoxCompiler.Count = 0 then
+  if TreeCompiler.TotalCount = 0 then
     PageControl.ActivePage := TabSheetOutput
   else
     PageControl.ActivePage := TabSheetCompiler;
@@ -1717,24 +1744,6 @@ begin
     RunScript;
 end;
 
-procedure TFormMain.ListBoxCompilerClick(Sender: TObject);
-var
-  CompilerMessage: TdwsMessage;
-begin
-  // check if item is selected at all
-  if ListBoxCompiler.ItemIndex < 0 then
-    Exit;
-
-  with ListBoxCompiler do
-    CompilerMessage := TdwsMessage(Items.Objects[ItemIndex]);
-
-  if CompilerMessage is TScriptMessage then
-  begin
-    SynEdit.GotoLineAndCenter(TScriptMessage(CompilerMessage).Line);
-    SynEdit.CaretX := TScriptMessage(CompilerMessage).Col;
-  end;
-end;
-
 procedure TFormMain.LogCallHandler(Sender: TObject; CallType: TLogCall;
   ClassAccess: Boolean = False);
 begin
@@ -2351,6 +2360,62 @@ begin
       end else Dec(TmpX)
     end;
   end;
+end;
+
+procedure TFormMain.TreeCompilerDblClick(Sender: TObject);
+var
+  NodeData: PCompilerMessage;
+  CompilerMessage: TdwsMessage;
+begin
+  // check if item is selected at all
+  if not Assigned(TreeCompiler.FocusedNode) then
+    Exit;
+
+  NodeData := TreeCompiler.GetNodeData(TreeCompiler.FocusedNode);
+  CompilerMessage := NodeData^.Message;
+
+  if CompilerMessage is TScriptMessage then
+  begin
+    SynEdit.GotoLineAndCenter(TScriptMessage(CompilerMessage).Line);
+    SynEdit.CaretX := TScriptMessage(CompilerMessage).Col;
+  end;
+end;
+
+procedure TFormMain.TreeCompilerFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  NodeData: PCompilerMessage;
+begin
+  NodeData := Sender.GetNodeData(Node);
+  Finalize(NodeData^);
+end;
+
+procedure TFormMain.TreeCompilerGetImageIndex(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+  var Ghosted: Boolean; var ImageIndex: Integer);
+var
+  NodeData: PCompilerMessage;
+begin
+  NodeData := Sender.GetNodeData(Node);
+  if NodeData.Message is TErrorMessage then
+    ImageIndex := 0
+  else if NodeData.Message is TWarningMessage then
+    ImageIndex := 1
+  else if NodeData.Message is TInfoMessage then
+    ImageIndex := 2;
+end;
+
+procedure TFormMain.TreeCompilerGetText(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
+  var CellText: string);
+var
+  NodeData: PCompilerMessage;
+begin
+  if not Assigned(Node) then
+    Exit;
+
+  NodeData := Sender.GetNodeData(Node);
+  CellText := NodeData^.Text;
 end;
 
 procedure TFormMain.SynCodeSuggestionsPaintItem(Sender: TObject;

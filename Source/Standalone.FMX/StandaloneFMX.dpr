@@ -3,7 +3,7 @@ program StandaloneFMX;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  PascalPrimer.Shared in 'PascalPrimer.Shared.pas' {DataModuleShared},
+  PascalPrimer.Shared in '..\PascalPrimer.Shared.pas' {DataModuleShared},
   PascalPrimer.StandaloneFMX in 'PascalPrimer.StandaloneFMX.pas' {FormStandalone};
 
 {$R *.res}
