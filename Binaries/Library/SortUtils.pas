@@ -3,7 +3,7 @@ unit SortUtils;
 interface
 
 uses
-  Shapes, TurtleBasic, TurtleIntermediate, TurtleAdvanced;
+  Shapes, Text, TurtleBasic, TurtleIntermediate, TurtleAdvanced;
 
 type
   TNumberArray = array of Integer;
@@ -35,13 +35,17 @@ end;
 procedure ShowNumbers(ANumberArray: TNumberArray);
 var
   Count: Integer;
+  OldText: string;
 begin
+  OldText := TextOutput.Text;
   Clear;
+  TextOutput.Text := OldText;
+  
   Count := High(ANumberArray) - Low(ANumberArray) + 1; 
 
   for var Index := Low(ANumberArray) to High(ANumberArray) - 1 do
-    Print(IntToStr(ANumberArray[Index]) + ', ');
-  PrintLn(ANumberArray[High(ANumberArray)]);
+    Write(IntToStr(ANumberArray[Index]) + ', ');
+  WriteLine(ANumberArray[High(ANumberArray)]);
 
   for var Index := Low(ANumberArray) to High(ANumberArray) do
   begin
