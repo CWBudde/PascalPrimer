@@ -205,8 +205,10 @@ type
     dwsUnitTeacher: TdwsUnit;
     Image32: TImage32;
     ImageListActions: TPngImageList;
+    ImageListMessages: TPngImageList;
     ImageListSuggestion: TPngImageList;
     MainMenu: TMainMenu;
+    MemoOutput: TMemo;
     MenuItemCursorVisible: TMenuItem;
     MenuItemEdit: TMenuItem;
     MenuItemEditCopy: TMenuItem;
@@ -215,6 +217,7 @@ type
     MenuItemEditPaste: TMenuItem;
     MenuItemEditSelectAll: TMenuItem;
     MenuItemEditUndo: TMenuItem;
+    MenuItemExamples: TMenuItem;
     MenuItemFile: TMenuItem;
     MenuItemFileExit: TMenuItem;
     MenuItemFileExportAs: TMenuItem;
@@ -230,6 +233,7 @@ type
     MenuItemOutput: TMenuItem;
     MenuItemOutputAntialiased: TMenuItem;
     MenuItemOutputSaveAs: TMenuItem;
+    MenuItemRecent: TMenuItem;
     MenuItemScript: TMenuItem;
     MenuItemScriptAbort: TMenuItem;
     MenuItemScriptJIT: TMenuItem;
@@ -269,12 +273,13 @@ type
     TabSheetCompiler: TTabSheet;
     TabSheetOutput: TTabSheet;
     ToolBar: TToolBar;
-    ToolButtonNew: TToolButton;
     ToolButtonCompile: TToolButton;
     ToolButtonCopy: TToolButton;
     ToolButtonCut: TToolButton;
     ToolButtonExit: TToolButton;
+    ToolButtonExport: TToolButton;
     ToolButtonFind: TToolButton;
+    ToolButtonNew: TToolButton;
     ToolButtonOpen: TToolButton;
     ToolButtonOptions: TToolButton;
     ToolButtonPaste: TToolButton;
@@ -286,12 +291,7 @@ type
     ToolButtonSeparator3: TToolButton;
     ToolButtonSeparator4: TToolButton;
     ToolButtonUndo: TToolButton;
-    ToolButtonExport: TToolButton;
-    MemoOutput: TMemo;
-    MenuItemRecent: TMenuItem;
-    MenuItemExamples: TMenuItem;
     TreeCompiler: TVirtualStringTree;
-    ImageListMessages: TPngImageList;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -989,11 +989,6 @@ begin
   FBackgroundCompilationThread.ScheduleCompilation;
 end;
 
-function TFormMain.GetAchievementLevel(Item: TAchievements): Integer;
-begin
-  Result := FAchievementLevel[Item];
-end;
-
 procedure TFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   SynEdit.Lines.SaveToFile(FRecentScriptName);
@@ -1047,6 +1042,11 @@ begin
   finally
     Free;
   end;
+end;
+
+function TFormMain.GetAchievementLevel(Item: TAchievements): Integer;
+begin
+  Result := FAchievementLevel[Item];
 end;
 
 procedure TFormMain.dwsUnitTeacherVariablesExamplesVisibleReadVar(
@@ -2054,6 +2054,7 @@ end;
 procedure TFormMain.SynCodeSuggestionsExecute(Kind: SynCompletionType;
   Sender: TObject; var CurrentInput: string; var x, y: Integer;
   var CanExecute: Boolean);
+
   function ContainsBlacklistedWord(const Text: string): Boolean;
   var
     Index: Integer;
