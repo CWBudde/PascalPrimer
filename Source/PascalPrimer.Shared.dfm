@@ -96,19 +96,6 @@ object DataModuleShared: TDataModuleShared
         OnInstantiate = dwsInstancesTextOutputInstantiate
       end>
     UnitName = 'Text'
-    Variables = <
-      item
-        Name = 'CursorVisible'
-        DataType = 'Boolean'
-        OnReadVar = dwsVariablesCursorVisibleReadVar
-        OnWriteVar = dwsVariablesCursorVisibleWriteVar
-      end
-      item
-        Name = 'CursorAngle'
-        DataType = 'Float'
-        OnReadVar = dwsVariablesCursorAngleReadVar
-        OnWriteVar = dwsVariablesCursorAngleWriteVar
-      end>
     StaticSymbols = False
     Left = 72
     Top = 72
