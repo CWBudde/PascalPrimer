@@ -9,25 +9,27 @@ unit PascalPrimer.Main;
 interface
 
 uses
-  System.Types, System.SyncObjs, System.SysUtils, System.Variants,
-  System.Classes, System.Generics.Collections, WinApi.Windows, WinApi.Messages,
+  System.Types, System.SyncObjs, System.SysUtils, System.ImageList,
+  System.Variants, System.Actions, System.Classes, System.Generics.Collections,
+  WinApi.Windows, WinApi.Messages,
   Vcl.Graphics, Vcl.Imaging.PngImage, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Menus, Vcl.StdActns, Vcl.ActnList,
   Vcl.ExtDlgs, Vcl.ComCtrls, Vcl.ImgList, Vcl.ToolWin, Vcl.Buttons,
 
   (* GR32 *)
   GR32, GR32_Image, GR32_Layers, GR32_Transforms, GR32_PNG, GR32_Polygons,
-  GR32_Paths,
+  GR32_Gamma, GR32_Paths,
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
-  dwsStrings, dwsUnitSymbols, dwsFunctions, dwsTokenizer,
+  dwsStrings, dwsUnitSymbols, dwsFunctions, dwsTokenizer, dwsScriptSource,
+  dwsSymbolDictionary,
   {$IFNDEF WIN64} dwsJIT, dwsJITx86, {$ENDIF}
 
   (* SynEdit *)
   SynEdit, SynEditHighlighter, SynHighlighterDWS, SynCompletionProposal,
   SynEditPlugins, SynEditMiscClasses, SynEditSearch, SynEditOptionsDialog,
-  SynMacroRecorder, SynEditTypes,
+  SynMacroRecorder, SynEditTypes, SynEditCodeFolding,
 
   (* PNG *)
   PngImageList, PngButtonFunctions,
@@ -358,7 +360,7 @@ type
       Node: PVirtualNode);
     procedure TreeCompilerGetImageIndex(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-      var Ghosted: Boolean; var ImageIndex: Integer);
+      var Ghosted: Boolean; var ImageIndex: TImageIndex);
   private
     FRecentScriptName: TFileName;
     FBackgroundCompilationThread: TBackgroundCompilationThread;
@@ -2226,6 +2228,7 @@ procedure TFormMain.SynParametersExecute(Kind: SynCompletionType;
 
     SymbolDictionary: TdwsSymbolDictionary;
     Symbol, TestSymbol: TSymbol;
+    SymbolPosList: TSymbolPositionList;
   begin
     // make sure the string list is present
     Assert(Assigned(ParameterInfos));
@@ -2257,9 +2260,9 @@ procedure TFormMain.SynParametersExecute(Kind: SynCompletionType;
 
       if TFuncSymbol(Symbol).IsOverloaded then
       begin
-        for ItemIndex := 0 to SymbolDictionary.Count - 1 do
+        for SymbolPosList in SymbolDictionary do
         begin
-          TestSymbol := SymbolDictionary.Items[ItemIndex].Symbol;
+          TestSymbol := SymbolPosList.Symbol;
 
           if (TestSymbol.ClassType = Symbol.ClassType) and
             SameText(TFuncSymbol(TestSymbol).Name, TFuncSymbol(Symbol).Name) and
@@ -2393,7 +2396,7 @@ end;
 
 procedure TFormMain.TreeCompilerGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
-  var Ghosted: Boolean; var ImageIndex: Integer);
+  var Ghosted: Boolean; var ImageIndex: TImageIndex);
 var
   NodeData: PCompilerMessage;
 begin

@@ -81,11 +81,6 @@ object FormMain: TFormMain
             Height = 152
             Align = alClient
             Header.AutoSizeIndex = 0
-            Header.Font.Charset = DEFAULT_CHARSET
-            Header.Font.Color = clWindowText
-            Header.Font.Height = -11
-            Header.Font.Name = 'Tahoma'
-            Header.Font.Style = []
             Header.MainColumn = -1
             Images = ImageListMessages
             TabOrder = 0
@@ -143,6 +138,14 @@ object FormMain: TFormMain
       Font.Name = 'Courier New'
       Font.Style = []
       TabOrder = 1
+      CodeFolding.GutterShapeSize = 11
+      CodeFolding.CollapsedLineColor = clGrayText
+      CodeFolding.FolderBarLinesColor = clGrayText
+      CodeFolding.IndentGuidesColor = clGray
+      CodeFolding.IndentGuides = True
+      CodeFolding.ShowCollapsedLine = False
+      CodeFolding.ShowHintMark = True
+      UseCodeFolding = False
       Gutter.Font.Charset = DEFAULT_CHARSET
       Gutter.Font.Color = clWindowText
       Gutter.Font.Height = -11
@@ -749,7 +752,6 @@ object FormMain: TFormMain
     Top = 40
   end
   object ImageListActions: TPngImageList
-    ColorDepth = cd32Bit
     DrawingStyle = dsTransparent
     PngImages = <
       item
@@ -1470,7 +1472,6 @@ object FormMain: TFormMain
     Top = 160
   end
   object ImageListSuggestion: TPngImageList
-    ColorDepth = cd32Bit
     DrawingStyle = dsTransparent
     PngImages = <
       item
@@ -1856,7 +1857,6 @@ object FormMain: TFormMain
     Top = 160
   end
   object ImageListMessages: TPngImageList
-    ColorDepth = cd32Bit
     DrawingStyle = dsTransparent
     PngImages = <
       item
