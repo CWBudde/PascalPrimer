@@ -474,7 +474,7 @@ object DataModuleShared: TDataModuleShared
             DataType = 'Float'
           end
           item
-            Name = 'Bliue'
+            Name = 'Blue'
             DataType = 'Float'
           end
           item

@@ -31,9 +31,10 @@ type
     procedure Invalidate(WaitForRefresh: Boolean);
     procedure SaveToFile(FileName: TFileName);
 
+    procedure DrawRectangle(Left, Top, Right, Bottom: Float; Color: TColor);
     procedure DrawCircle(Center: TPointF; Radius: Double; Color: TColor);
     procedure DrawLine(A, B: TPoint; Color: TColor);
-    procedure DrawLineF(A, B: TPointF; Color: TColor);
+    procedure DrawLineF(A, B: TPointF; Color: TColor; StrokeWidth: Float);
 
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
@@ -139,10 +140,17 @@ begin
   FImage.Bitmap.Canvas.DrawLine(A, B, 1);
 end;
 
-procedure TOutputImage.DrawLineF(A, B: TPointF; Color: TColor);
+procedure TOutputImage.DrawLineF(A, B: TPointF; Color: TColor; StrokeWidth: Float);
 begin
   FImage.Bitmap.Canvas.Stroke.Color := Color;
+  FImage.Bitmap.Canvas.Stroke.Thickness := StrokeWidth;
   FImage.Bitmap.Canvas.DrawLine(A, B, 1);
+end;
+
+procedure TOutputImage.DrawRectangle(Left, Top, Right, Bottom: Float;
+  Color: TColor);
+begin
+  FImage.Bitmap.Canvas.DrawRect(RectF(Left, Top, Right, Bottom), 0, 0, [], 1);
 end;
 
 function TOutputImage.GetHeight: Integer;

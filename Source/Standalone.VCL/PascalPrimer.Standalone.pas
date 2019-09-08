@@ -11,6 +11,7 @@ uses
 
   (* GR32 *)
   GR32, GR32_Image, GR32_Layers, GR32_Transforms, GR32_PNG, GR32_Polygons,
+  GR32_Gamma,
 
   (* DWS *)
   dwsComp, dwsExprs, dwsSymbols, dwsErrors, dwsSuggestions, dwsVCLGUIFunctions,
